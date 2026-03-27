@@ -6,13 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { UserManagementTable } from '@/components/admin/UserManagementTable';
 import { UserCreationForm } from '@/components/admin/UserCreationForm';
 import { UserEditModal } from '@/components/admin/UserEditModal';
+import { DashboardLayout } from '@/components/dashboard-layout';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import type { UserWithProfile } from '@/types';
 
-export default function UsersPage() {
+function UsersPageContent() {
   const { stats, loading } = useUserManagement();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithProfile | null>(null);
+
+  const handleCreateUser = () => {
+    setShowCreateForm(true);
+  };
 
   const statsCards = [
     {
@@ -46,62 +51,75 @@ export default function UsersPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-muted-foreground">
-          Manage all system users, roles, and permissions
-        </p>
+    <div className="space-y-6 fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gradient">User Management</h1>
+          <p className="text-muted-foreground">
+            Manage students, faculty, and administrators across the system
+          </p>
+        </div>
+        <UserCreationForm
+          open={showCreateForm}
+          onClose={() => setShowCreateForm(false)}
+        />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statsCards.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? '...' : stat.value.toLocaleString()}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stat.trend}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid-responsive">
+        {statsCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.title} className="card-hover card-elevated">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stat.description}
+                </p>
+                <div className="mt-2 text-xs text-green-600 dark:text-green-400">
+                  {stat.trend}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* User Management Table */}
-      <Card>
+      <Card className="card-elevated">
         <CardHeader>
           <CardTitle>All Users</CardTitle>
           <CardDescription>
-            View, edit, and manage all system users. Click on a user to edit their information.
+            View and manage all users in the system
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <UserManagementTable
-            onCreateUser={() => setShowCreateForm(true)}
-            onEditUser={setEditingUser}
+        <CardContent className="p-0">
+          <UserManagementTable 
+            onEditUser={setEditingUser} 
+            onCreateUser={handleCreateUser}
           />
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      <UserCreationForm
-        open={showCreateForm}
-        onClose={() => setShowCreateForm(false)}
-      />
-
-      <UserEditModal
-        user={editingUser}
-        open={!!editingUser}
-        onClose={() => setEditingUser(null)}
-      />
+      {editingUser && (
+        <UserEditModal
+          user={editingUser}
+          open={true}
+          onClose={() => setEditingUser(null)}
+        />
+      )}
     </div>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <DashboardLayout>
+      <UsersPageContent />
+    </DashboardLayout>
   );
 }

@@ -14,21 +14,11 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Render children without theme provider during SSR
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
   return (
     <NextThemesProvider
       {...props}
-      storageKey="academy-lms-theme"
+      attribute="class"
+      defaultTheme="system"
       enableSystem
       disableTransitionOnChange
     >

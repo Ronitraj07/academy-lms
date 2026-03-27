@@ -206,9 +206,13 @@ export default function AdminDashboard() {
                 <BookOpen className="h-4 w-4 mr-2" />
                 Manage Subjects
               </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Users className="h-4 w-4 mr-2" />
-                Bulk Enrollments
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => router.push('/admin/attendance')}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Attendance System
               </Button>
               <Button className="w-full justify-start" variant="outline">
                 <BarChart3 className="h-4 w-4 mr-2" />

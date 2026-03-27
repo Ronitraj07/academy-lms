@@ -271,6 +271,62 @@ export interface SubjectWithStats extends Subject {
   faculty?: Faculty;
 }
 
+// Attendance Management Types
+export interface AttendanceRecord {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  date: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
+  marked_by: string;
+  notes?: string;
+  student?: Student;
+  subject?: Subject;
+  marked_by_user?: User;
+}
+
+export interface AttendanceSession {
+  id: string;
+  subject_id: string;
+  date: string;
+  created_by: string;
+  notes?: string;
+  total_students: number;
+  present_count: number;
+  absent_count: number;
+  late_count: number;
+  excused_count: number;
+}
+
+export interface BulkAttendanceForm {
+  subject_id: string;
+  date: string;
+  notes?: string;
+  attendance_records: {
+    student_id: string;
+    status: 'present' | 'absent' | 'late' | 'excused';
+    notes?: string;
+  }[];
+}
+
+export interface AttendanceStats {
+  total_classes: number;
+  total_students: number;
+  average_attendance: number;
+  recent_sessions: AttendanceSession[];
+  attendance_trend: { date: string; percentage: number }[];
+}
+
+export interface StudentAttendanceSummary {
+  student_id: string;
+  student_name: string;
+  total_classes: number;
+  attended_classes: number;
+  attendance_percentage: number;
+  recent_status: 'present' | 'absent' | 'late' | 'excused';
+  student?: Student;
+}
+
 // Supabase types
 export interface Database {
   public: {

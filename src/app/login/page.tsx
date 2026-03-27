@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { User, GraduationCap, Users, Shield } from 'lucide-react';
@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showDemoCredentials, setShowDemoCredentials] = useState(false);
+  const [keySequence, setKeySequence] = useState<string[]>([]);
   const router = useRouter();
 
   const roles = [
@@ -40,6 +42,29 @@ export default function LoginPage() {
       testCredentials: { email: 'admin@academy.test', password: 'admin123!' }
     },
   ];
+
+  // Secret key sequence to show demo credentials: "demo"
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      const newSequence = [...keySequence, e.key.toLowerCase()].slice(-4);
+      setKeySequence(newSequence);
+      
+      if (newSequence.join('') === 'demo') {
+        setShowDemoCredentials(true);
+        setKeySequence([]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [keySequence]);
+
+  // Show demo credentials in development mode automatically
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      setShowDemoCredentials(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,25 +225,52 @@ export default function LoginPage() {
               </button>
             ))}
 
-            <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-              <h3 className="font-medium text-amber-800 dark:text-amber-200 mb-2">
-                Quick Test Access
-              </h3>
-              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                Click on any role above, then use these test credentials:
-              </p>
-              <div className="space-y-1 text-xs text-amber-600 dark:text-amber-400">
-                {roles.map((role) => (
-                  <button
-                    key={`test-${role.id}`}
-                    onClick={() => fillTestCredentials(role.id)}
-                    className="block hover:underline"
-                  >
-                    <strong>{role.title}:</strong> {role.testCredentials.email} / {role.testCredentials.password}
-                  </button>
-                ))}
+            {/* Demo credentials - hidden in production unless secret key is pressed */}
+            {showDemoCredentials && (
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                    Demo Test Access
+                  </h3>
+                  {process.env.NODE_ENV === 'production' && (
+                    <button
+                      onClick={() => setShowDemoCredentials(false)}
+                      className="text-amber-600 hover:text-amber-800 text-sm"
+                    >
+                      ✕ Hide
+                    </button>
+                  )}
+                </div>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                  Click on any role above, then use these test credentials:
+                </p>
+                <div className="space-y-1 text-xs text-amber-600 dark:text-amber-400">
+                  {roles.map((role) => (
+                    <button
+                      key={`test-${role.id}`}
+                      onClick={() => fillTestCredentials(role.id)}
+                      className="block hover:underline"
+                    >
+                      <strong>{role.title}:</strong> {role.testCredentials.email} / {role.testCredentials.password}
+                    </button>
+                  ))}
+                </div>
+                {process.env.NODE_ENV === 'production' && (
+                  <p className="text-xs text-amber-500 mt-2 italic">
+                    Production demo mode - type "demo" to show this panel
+                  </p>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Help text for production users */}
+            {!showDemoCredentials && process.env.NODE_ENV === 'production' && (
+              <div className="mt-6 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  💡 For demo access, type "demo" on this page to reveal test credentials
+                </p>
+              </div>
+            )}
           </div>
         )}
 
