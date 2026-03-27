@@ -52,6 +52,50 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // Check if we're in demo mode (placeholder URL)
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const isDemoMode = supabaseUrl.includes('placeholder');
+      
+      console.log('🔍 Debug - Supabase URL:', supabaseUrl);
+      console.log('🔍 Debug - Is Demo Mode:', isDemoMode);
+      console.log('🔍 Debug - Selected Role:', selectedRole);
+      console.log('🔍 Debug - Email:', email);
+      
+      if (isDemoMode) {
+        // Demo mode: Check against test credentials
+        const testCreds = roles.find(r => r.id === selectedRole)?.testCredentials;
+        
+        console.log('🔍 Debug - Test Credentials:', testCreds);
+        console.log('🔍 Debug - Password match:', password === testCreds?.password);
+        
+        if (email === testCreds?.email && password === testCreds?.password) {
+          // Simulate successful login in demo mode
+          console.log('✅ Demo mode login successful:', { role: selectedRole, email });
+          
+          // Store demo user in localStorage
+          localStorage.setItem('demo_user', JSON.stringify({
+            email,
+            role: selectedRole,
+            id: `demo-${selectedRole}-id`
+          }));
+          
+          // Redirect based on role
+          const dashboardUrl = selectedRole === 'admin' ? '/admin' : 
+                              selectedRole === 'faculty' ? '/faculty' : '/student';
+          
+          console.log('🚀 Attempting to navigate to:', dashboardUrl);
+          
+          // Use window.location for demo mode to ensure navigation
+          window.location.href = dashboardUrl;
+          return;
+        } else {
+          setError('Invalid credentials. Use test credentials provided above.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Real Supabase authentication
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -68,6 +112,7 @@ export default function LoginPage() {
       router.push(dashboardUrl);
     } catch (err) {
       setError('An unexpected error occurred');
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
@@ -76,6 +121,14 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     if (!selectedRole) {
       setError('Please select a role first');
+      return;
+    }
+
+    // Check if we're in demo mode
+    const isDemoMode = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
+    
+    if (isDemoMode) {
+      setError('Google OAuth is not available in demo mode. Please use test credentials above.');
       return;
     }
 

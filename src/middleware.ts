@@ -9,15 +9,13 @@ export async function middleware(request: NextRequest) {
   });
 
   // Check if we're in demo mode
-  const isDemoMode = !process.env.NEXT_PUBLIC_SUPABASE_URL || 
+  const isDemoMode = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') || 
+                     !process.env.NEXT_PUBLIC_SUPABASE_URL || 
                      process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_url_here';
 
   if (isDemoMode) {
-    // In demo mode, allow all routes and redirect login to student dashboard
-    const isLoginPage = request.nextUrl.pathname === '/login';
-    if (isLoginPage) {
-      return NextResponse.redirect(new URL('/student', request.url));
-    }
+    // In demo mode, allow all routes without authentication checks
+    console.log('🔧 Middleware: Demo mode active, allowing route:', request.nextUrl.pathname);
     return response;
   }
 
