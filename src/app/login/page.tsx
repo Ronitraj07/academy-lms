@@ -152,13 +152,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-6">
-      <div className="max-w-md w-full space-y-6">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center shadow-lg">
-            <GraduationCap className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-800 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-md w-full space-y-6 relative z-10">
+        <div className="text-center fade-in">
+          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center shadow-lg bounce-in relative">
+            <div className="absolute inset-0 bg-primary rounded-full animate-ping opacity-25"></div>
+            <GraduationCap className="h-8 w-8 text-white relative z-10" />
           </div>
-          <h1 className="mt-8 text-4xl font-bold text-gray-900 dark:text-white">
+          <h1 className="mt-8 text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-600 to-blue-600">
             Academy LMS
           </h1>
           <p className="mt-3 text-base text-gray-600 dark:text-gray-400">
@@ -169,14 +177,15 @@ export default function LoginPage() {
         {/* Role Selection */}
         {!selectedRole && (
           <div className="space-y-4 pt-4">
-            {roles.map((role) => (
+            {roles.map((role, index) => (
               <button
                 key={role.id}
                 onClick={() => setSelectedRole(role.id)}
-                className="w-full p-6 border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-primary transition-all duration-300 text-left group hover:shadow-lg hover:scale-[1.02]"
+                className="w-full p-6 border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-primary transition-all duration-300 text-left group hover:shadow-xl hover:scale-[1.03] bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex items-center space-x-4">
-                  <div className={cn('p-4 rounded-2xl text-white shadow-md', role.color)}>
+                  <div className={cn('p-4 rounded-2xl text-white shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3', role.color)}>
                     <role.icon className="h-7 w-7" />
                   </div>
                   <div className="flex-1">
@@ -187,6 +196,13 @@ export default function LoginPage() {
                       {role.description}
                     </p>
                   </div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </button>
             ))}
@@ -196,13 +212,13 @@ export default function LoginPage() {
 
         {/* Login Form */}
         {selectedRole && (
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl">
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-8 rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 slide-in-up">
             <div className="flex items-center space-x-3 mb-8">
               {(() => {
                 const role = roles.find(r => r.id === selectedRole);
                 return role ? (
                   <>
-                    <div className={cn('p-3 rounded-2xl text-white shadow-md', role.color)}>
+                    <div className={cn('p-3 rounded-2xl text-white shadow-md scale-in', role.color)}>
                       <role.icon className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
@@ -211,7 +227,7 @@ export default function LoginPage() {
                       </h2>
                       <button
                         onClick={() => setSelectedRole(null)}
-                        className="text-sm text-gray-500 hover:text-primary transition-colors"
+                        className="text-sm text-gray-500 hover:text-primary transition-colors hover:underline"
                       >
                         Change role
                       </button>
@@ -222,13 +238,13 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl slide-in-up">
                 <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleLogin} className="space-y-5">
-              <div>
+              <div className="fade-in" style={{ animationDelay: '0.1s' }}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email
                 </label>
@@ -236,13 +252,13 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white transition-all"
+                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white transition-all hover:border-primary/50"
                   placeholder="Enter your email"
                   required
                 />
               </div>
 
-              <div>
+              <div className="fade-in" style={{ animationDelay: '0.2s' }}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Password
                 </label>
@@ -250,7 +266,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white transition-all"
+                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white transition-all hover:border-primary/50"
                   placeholder="Enter your password"
                   required
                 />
@@ -259,19 +275,21 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-6 bg-primary text-white rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                className="w-full py-3 px-6 bg-gradient-to-r from-primary via-purple-600 to-blue-600 text-white rounded-full hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg hover:scale-[1.02] relative overflow-hidden group fade-in"
+                style={{ animationDelay: '0.3s' }}
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                <span className="relative z-10">{loading ? 'Signing in...' : 'Sign In'}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
             </form>
 
-            <div className="mt-6">
+            <div className="mt-6 fade-in" style={{ animationDelay: '0.4s' }}>
               <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full py-3 px-6 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2 font-medium hover:shadow-md"
+                className="w-full py-3 px-6 border-2 border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2 font-medium hover:shadow-md hover:border-primary/50 group"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>

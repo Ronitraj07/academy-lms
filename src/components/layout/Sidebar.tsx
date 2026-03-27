@@ -217,15 +217,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-xl lg:shadow-none",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-primary/5 to-purple-500/5">
             <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-                <GraduationCap className="h-5 w-5 text-white" />
+              <div className="h-8 w-8 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center shadow-lg relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary to-purple-600 rounded-lg animate-pulse opacity-50"></div>
+                <GraduationCap className="h-5 w-5 text-white relative z-10" />
               </div>
               <div>
                 <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -240,15 +241,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="lg:hidden"
+              className="lg:hidden hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
-            {filteredNavigation.map((item) => {
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-modern">
+            {filteredNavigation.map((item, index) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
@@ -256,27 +257,50 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   href={item.href}
                   onClick={() => onClose()}
                   className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors group",
-                    isActive 
-                      ? "bg-primary text-white" 
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden fade-in",
+                    isActive
+                      ? "bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg shadow-primary/30"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-md"
                   )}
+                  style={{ animationDelay: `${index * 0.03}s` }}
                 >
+                  {/* Animated background for hover */}
+                  {!isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+                  )}
+
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"></div>
+                  )}
+
                   <item.icon className={cn(
-                    "h-5 w-5 transition-colors",
-                    isActive ? "text-white" : "text-gray-500 dark:text-gray-400 group-hover:text-primary"
+                    "h-5 w-5 transition-all duration-300 relative z-10",
+                    isActive
+                      ? "text-white"
+                      : "text-gray-500 dark:text-gray-400 group-hover:text-primary group-hover:scale-110"
                   )} />
-                  <span className="font-medium">{item.title}</span>
+                  <span className="font-medium relative z-10">{item.title}</span>
+
+                  {/* Hover arrow */}
+                  {!isActive && (
+                    <div className="ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0 relative z-10">
+                      <svg className="w-4 h-4 text-primary" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
           {/* User Section */}
-          <div className="border-t border-gray-200 dark:border-gray-800 p-4">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
+          <div className="border-t border-gray-200 dark:border-gray-800 p-4 bg-gradient-to-r from-gray-50/50 to-primary/5 dark:from-gray-800/50 dark:to-primary/5">
+            <div className="flex items-center space-x-3 mb-4 p-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-10 w-10 bg-gradient-to-br from-primary to-purple-600 rounded-full flex items-center justify-center shadow-md relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary to-purple-600 rounded-full animate-pulse opacity-30"></div>
+                <span className="text-white text-sm font-medium relative z-10">
                   {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                 </span>
               </div>
@@ -293,9 +317,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               variant="outline"
               size="sm"
               onClick={handleSignOut}
-              className="w-full flex items-center space-x-2"
+              className="w-full flex items-center space-x-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-700 transition-all duration-300 group"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
               <span>Sign Out</span>
             </Button>
           </div>
