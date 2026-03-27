@@ -30,6 +30,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
+**Note:** The app will automatically detect if these environment variables are missing and run in demo mode. You don't need to configure these unless you want to connect to a real Supabase instance.
+
 ### 4. **Deploy**
 - Click "Deploy" 
 - Vercel will build and deploy automatically
