@@ -152,38 +152,38 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-6">
+      <div className="max-w-md w-full space-y-6">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-primary rounded-full flex items-center justify-center">
-            <GraduationCap className="h-6 w-6 text-white" />
+          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center shadow-lg">
+            <GraduationCap className="h-8 w-8 text-white" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="mt-8 text-4xl font-bold text-gray-900 dark:text-white">
             Academy LMS
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-3 text-base text-gray-600 dark:text-gray-400">
             Select your role to continue
           </p>
         </div>
 
         {/* Role Selection */}
         {!selectedRole && (
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4">
             {roles.map((role) => (
               <button
                 key={role.id}
                 onClick={() => setSelectedRole(role.id)}
-                className="w-full p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary transition-colors text-left group"
+                className="w-full p-6 border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-primary transition-all duration-300 text-left group hover:shadow-lg hover:scale-[1.02]"
               >
                 <div className="flex items-center space-x-4">
-                  <div className={cn('p-3 rounded-full text-white', role.color)}>
-                    <role.icon className="h-6 w-6" />
+                  <div className={cn('p-4 rounded-2xl text-white shadow-md', role.color)}>
+                    <role.icon className="h-7 w-7" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
                       {role.title}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {role.description}
                     </p>
                   </div>
@@ -196,22 +196,22 @@ export default function LoginPage() {
 
         {/* Login Form */}
         {selectedRole && (
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex items-center space-x-3 mb-6">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl">
+            <div className="flex items-center space-x-3 mb-8">
               {(() => {
                 const role = roles.find(r => r.id === selectedRole);
                 return role ? (
                   <>
-                    <div className={cn('p-2 rounded-full text-white', role.color)}>
-                      <role.icon className="h-5 w-5" />
+                    <div className={cn('p-3 rounded-2xl text-white shadow-md', role.color)}>
+                      <role.icon className="h-6 w-6" />
                     </div>
-                    <div>
-                      <h2 className="font-semibold text-gray-900 dark:text-white">
+                    <div className="flex-1">
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                         Login as {role.title}
                       </h2>
                       <button
                         onClick={() => setSelectedRole(null)}
-                        className="text-sm text-gray-500 hover:text-primary"
+                        className="text-sm text-gray-500 hover:text-primary transition-colors"
                       >
                         Change role
                       </button>
@@ -222,12 +222,12 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
                 <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email
@@ -236,7 +236,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white transition-all"
                   placeholder="Enter your email"
                   required
                 />
@@ -250,7 +250,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white transition-all"
                   placeholder="Enter your password"
                   required
                 />
@@ -259,17 +259,17 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full py-3 px-6 bg-primary text-white rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-[1.02]"
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
 
-            <div className="mt-4">
+            <div className="mt-6">
               <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                className="w-full py-3 px-6 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2 font-medium hover:shadow-md"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
