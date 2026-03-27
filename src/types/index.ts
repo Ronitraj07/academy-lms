@@ -192,6 +192,85 @@ export interface CreateUserForm {
   specialization?: string;
 }
 
+export interface UpdateUserForm {
+  email?: string;
+  full_name?: string;
+  phone?: string;
+  address?: string;
+  date_of_birth?: string;
+  status?: 'active' | 'inactive';
+  // Role-specific updates
+  department?: string;
+  specialization?: string;
+  class_level?: string;
+  guardian_contact?: string;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  studentCount: number;
+  facultyCount: number;
+  adminCount: number;
+  activeUsers: number;
+  newUsersThisMonth: number;
+}
+
+export interface UserWithProfile extends User {
+  profile?: Profile;
+  student?: Student;
+  faculty?: Faculty;
+  status?: 'active' | 'inactive';
+}
+
+export interface UserActivity {
+  id: string;
+  user_id: string;
+  action: 'login' | 'profile_update' | 'password_change' | 'role_change' | 'created' | 'deleted';
+  actor: string;
+  timestamp: string;
+  details?: Record<string, any>;
+}
+
+// Subject Management Types
+export interface CreateSubjectForm {
+  name: string;
+  code: string;
+  description: string;
+  credits: number;
+  department: string;
+  faculty_id?: string;
+}
+
+export interface UpdateSubjectForm {
+  name?: string;
+  code?: string;
+  description?: string;
+  credits?: number;
+  department?: string;
+  faculty_id?: string;
+}
+
+export interface SubjectStats {
+  total_subjects: number;
+  active_subjects: number;
+  students_enrolled: number;
+  recent_enrollments: SubjectEnrollment[];
+  subjects_by_department: { department: string; count: number }[];
+}
+
+export interface EnrollmentForm {
+  student_ids: string[];
+  subject_id: string;
+  faculty_id: string;
+}
+
+export interface SubjectWithStats extends Subject {
+  enrolled_students?: number;
+  total_attendance?: number;
+  average_attendance?: number;
+  faculty?: Faculty;
+}
+
 // Supabase types
 export interface Database {
   public: {

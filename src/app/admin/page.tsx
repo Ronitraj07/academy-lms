@@ -1,7 +1,13 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { UserCreationForm } from '@/components/admin/UserCreationForm';
+import { useUserManagement } from '@/hooks/useUserManagement';
 import { 
   Users, 
   GraduationCap, 
@@ -18,6 +24,14 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const { stats, loading } = useUserManagement();
+  const [showCreateUser, setShowCreateUser] = useState(false);
+
+  const handleNavigateToUsers = () => {
+    router.push('/admin/users');
+  };
+
   return (
     <DashboardLayout title="Admin Dashboard">
       <div className="space-y-6">
@@ -32,7 +46,7 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex space-x-3">
-            <Button className="flex items-center space-x-2">
+            <Button className="flex items-center space-x-2" onClick={() => setShowCreateUser(true)}>
               <UserPlus className="h-4 w-4" />
               <span>Add User</span>
             </Button>
@@ -51,8 +65,12 @@ export default function AdminDashboard() {
               <GraduationCap className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,247</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : (stats?.studentCount || 0).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                +{stats?.newUsersThisMonth || 0} new this month
+              </p>
             </CardContent>
           </Card>
 
@@ -62,19 +80,23 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">87</div>
-              <p className="text-xs text-muted-foreground">+3 new this month</p>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : (stats?.facultyCount || 0).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">Active teaching staff</p>
             </CardContent>
           </Card>
 
           <Card className="card-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Subjects</CardTitle>
-              <BookOpen className="h-4 w-4 text-purple-600" />
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Shield className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">142</div>
-              <p className="text-xs text-muted-foreground">Across all departments</p>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : (stats?.totalUsers || 0).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">All system users</p>
             </CardContent>
           </Card>
 
@@ -160,11 +182,27 @@ export default function AdminDashboard() {
               <CardDescription>Common administrative tasks</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline">
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => setShowCreateUser(true)}
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create User
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={handleNavigateToUsers}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Manage Users
+              </Button>
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => router.push('/admin/subjects')}
+              >
                 <BookOpen className="h-4 w-4 mr-2" />
                 Manage Subjects
               </Button>
@@ -362,6 +400,12 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modals */}
+      <UserCreationForm
+        open={showCreateUser}
+        onClose={() => setShowCreateUser(false)}
+      />
     </DashboardLayout>
   );
 }
