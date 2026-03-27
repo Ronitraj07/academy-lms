@@ -17,9 +17,14 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Skip to main content link for accessibility */}
+      <a href="#main-content" className="skip-to-main">
+        Skip to main content
+      </a>
+
       <div className="flex h-screen">
         {/* Sidebar */}
-        <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
+        <div className="hidden lg:block lg:w-72 lg:flex-shrink-0" role="complementary" aria-label="Sidebar navigation">
           <Sidebar isOpen={true} onClose={closeSidebar} />
         </div>
 
@@ -32,7 +37,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
           <Navbar onMenuClick={toggleSidebar} title={title} />
 
           {/* Content */}
-          <main className="flex-1 overflow-y-auto">
+          <main id="main-content" className="flex-1 overflow-y-auto" role="main" aria-label="Main content">
             <div className="p-6">
               {children}
             </div>

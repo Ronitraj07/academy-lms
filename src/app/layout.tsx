@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PWAInitializer } from "@/components/pwa-initializer";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Academy LMS - Learning Management System",
@@ -74,7 +71,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/pwa/icon-192x192.png" />
         <meta name="theme-color" content="#ec4899" />
       </head>
-      <body className={`${inter.className} antialiased min-h-full pwa-safe-area`}>
+      <body className="antialiased min-h-full pwa-safe-area">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
