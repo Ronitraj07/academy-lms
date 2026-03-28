@@ -117,16 +117,17 @@ export function UserManagementTable({ onCreateUser, onEditUser }: UserManagement
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
           <div className="relative flex-1 sm:max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Search by name..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-9"
+              aria-label="Search users by name"
             />
           </div>
           <Select value={roleFilter} onValueChange={handleRoleFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[140px]" aria-label="Filter users by role">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Filter by role" />
             </SelectTrigger>
@@ -142,11 +143,12 @@ export function UserManagementTable({ onCreateUser, onEditUser }: UserManagement
             size="icon"
             onClick={handleRefresh}
             disabled={loading}
+            aria-label="Refresh user list"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
-        <Button onClick={onCreateUser}>
+        <Button onClick={onCreateUser} aria-label="Add new user">
           <UserPlus className="h-4 w-4 mr-2" />
           Add User
         </Button>
@@ -164,7 +166,7 @@ export function UserManagementTable({ onCreateUser, onEditUser }: UserManagement
       {/* Table */}
       <Card>
         <div className="overflow-x-auto">
-          <Table>
+          <Table aria-label="User management table">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -230,6 +232,7 @@ export function UserManagementTable({ onCreateUser, onEditUser }: UserManagement
                           variant="ghost"
                           size="icon"
                           onClick={() => onEditUser(user)}
+                          aria-label={`Edit user ${user.full_name || user.email}`}
                           title="Edit user"
                         >
                           <Pencil className="h-4 w-4" />
@@ -238,6 +241,7 @@ export function UserManagementTable({ onCreateUser, onEditUser }: UserManagement
                           variant="ghost"
                           size="icon"
                           onClick={() => setDeleteUserId(user.id)}
+                          aria-label={`Delete user ${user.full_name || user.email}`}
                           title="Delete user"
                           disabled={user.role === 'admin'} // Prevent deleting admins
                         >

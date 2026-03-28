@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
+  React.HTMLAttributes<HTMLTableElement> & { 'aria-label'?: string }
 >(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto rounded-md border border-border">
     <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
@@ -16,6 +16,10 @@ const Table = React.forwardRef<
         role="table"
         {...props}
       />
+    </div>
+    {/* Mobile scroll indicator */}
+    <div className="absolute bottom-0 right-0 p-2 text-xs text-muted-foreground bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden">
+      <span className="opacity-50">→ Scroll</span>
     </div>
   </div>
 ))
