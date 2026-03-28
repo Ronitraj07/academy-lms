@@ -196,7 +196,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-850 to-black flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-850 to-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Premium animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-48 w-96 h-96 bg-primary/15 rounded-full blur-3xl opacity-40 animate-pulse" style={{ animationDuration: '8s' }}></div>
@@ -204,7 +204,7 @@ export default function LoginPage() {
       </div>
 
       {/* Login Card */}
-      <div className="w-full max-w-md relative z-10 fade-in">
+      <div className="w-full relative z-10 fade-in" style={{ maxWidth: '448px' }}>
         {/* Main card container */}
         <div className="bg-gradient-to-br from-slate-900/95 to-slate-950/95 backdrop-blur-xl border border-slate-700/40 rounded-2xl shadow-2xl p-8 md:p-10">
           {/* Header Section */}
