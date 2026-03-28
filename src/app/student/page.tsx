@@ -32,7 +32,7 @@ export default function StudentDashboard() {
           Student Dashboard
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Welcome back! Here's an overview of your academic progress.
+          Welcome back! Here&apos;s an overview of your academic progress.
         </p>
       </div>
 

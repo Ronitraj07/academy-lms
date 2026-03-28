@@ -8,16 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UserCreationForm } from '@/components/admin/UserCreationForm';
 import { useUserManagement } from '@/hooks/useUserManagement';
-import { 
-  Users, 
-  GraduationCap, 
-  BookOpen, 
+import {
+  Users,
+  GraduationCap,
+  BookOpen,
   BarChart3,
   Settings,
   Shield,
   TrendingUp,
   AlertTriangle,
-  Plus,
   UserPlus,
   FileText,
   Activity

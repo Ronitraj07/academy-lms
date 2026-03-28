@@ -17,7 +17,7 @@ export default function OfflinePage() {
           <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
             <Wifi className="w-8 h-8 text-muted-foreground" />
           </div>
-          <CardTitle className="text-2xl">You're Offline</CardTitle>
+          <CardTitle className="text-2xl">You&apos;re Offline</CardTitle>
           <CardDescription>
             No internet connection detected. Some features may not be available.
           </CardDescription>
@@ -52,7 +52,7 @@ export default function OfflinePage() {
 
           <div className="text-center pt-4 border-t">
             <p className="text-xs text-muted-foreground">
-              Your data will sync automatically when you're back online.
+              Your data will sync automatically when you&apos;re back online.
             </p>
           </div>
         </CardContent>

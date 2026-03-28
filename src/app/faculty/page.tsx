@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Calendar, BookOpen, Users, TrendingUp, Clock, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useFacultySubjects } from '@/hooks/useFacultySubjects';
 import { useAllStudents } from '@/hooks/useAllStudents';
 import { SubjectOverview } from '@/components/faculty/SubjectOverview';
@@ -24,21 +23,16 @@ interface Subject {
   average_attendance: number;
 }
 
-export default function FacultyPage() {
-  const { subjects, loading: subjectsLoading, createSubject } = useFacultySubjects();
-  const { students: allStudents, enrollStudent, unenrollStudent } = useAllStudents();
-  
-  const [activeView, setActiveView] = useState<'overview' | 'attendance' | 'students' | 'notifications'>('overview');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+// Quick Stats Component - moved outside to avoid recreation during render
+interface QuickStatsProps {
+  subjectsCount: number;
+  totalStudents: number;
+  averageAttendance: number;
+  totalClasses: number;
+}
 
-  // Calculate quick stats
-  const totalStudents = subjects.reduce((acc, subject) => acc + subject.enrollment_count, 0);
-  const averageAttendance = subjects.length > 0 
-    ? subjects.reduce((acc, subject) => acc + subject.average_attendance, 0) / subjects.length
-    : 0;
-  const totalClasses = subjects.reduce((acc, subject) => acc + subject.recent_classes, 0);
-
-  const QuickStats = () => (
+function QuickStats({ subjectsCount, totalStudents, averageAttendance, totalClasses }: QuickStatsProps) {
+  return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <Card className="p-6">
         <div className="flex items-center">
@@ -47,7 +41,7 @@ export default function FacultyPage() {
           </div>
           <div className="ml-4">
             <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {subjects.length}
+              {subjectsCount}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">Subjects</p>
           </div>
@@ -97,18 +91,32 @@ export default function FacultyPage() {
       </Card>
     </div>
   );
+}
 
-  const ViewToggle = () => (
+// View Toggle Component - moved outside to avoid recreation during render
+type ViewType = 'overview' | 'attendance' | 'students' | 'notifications';
+
+interface ViewToggleProps {
+  activeView: ViewType;
+  onViewChange: (view: ViewType) => void;
+}
+
+function ViewToggle({ activeView, onViewChange }: ViewToggleProps) {
+  const views = [
+    { id: 'overview' as const, label: 'Overview', icon: BookOpen },
+    { id: 'attendance' as const, label: 'Attendance', icon: Calendar },
+    { id: 'students' as const, label: 'Students', icon: Users },
+    { id: 'notifications' as const, label: 'Notifications', icon: TrendingUp },
+  ];
+
+  return (
     <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-6">
-      {[
-        { id: 'overview', label: 'Overview', icon: BookOpen },
-        { id: 'attendance', label: 'Attendance', icon: Calendar },
-        { id: 'students', label: 'Students', icon: Users },
-        { id: 'notifications', label: 'Notifications', icon: TrendingUp },
-      ].map(({ id, label, icon: Icon }) => (
+      {views.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
-          onClick={() => setActiveView(id as any)}
+          onClick={() => onViewChange(id)}
+          aria-label={`Switch to ${label} view`}
+          aria-pressed={activeView === id}
           className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             activeView === id
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -121,6 +129,21 @@ export default function FacultyPage() {
       ))}
     </div>
   );
+}
+
+export default function FacultyPage() {
+  const { subjects, loading: subjectsLoading, createSubject } = useFacultySubjects();
+  const { students: allStudents, enrollStudent, unenrollStudent } = useAllStudents();
+
+  const [activeView, setActiveView] = useState<ViewType>('overview');
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+
+  // Calculate quick stats
+  const totalStudents = subjects.reduce((acc, subject) => acc + subject.enrollment_count, 0);
+  const averageAttendance = subjects.length > 0
+    ? subjects.reduce((acc, subject) => acc + subject.average_attendance, 0) / subjects.length
+    : 0;
+  const totalClasses = subjects.reduce((acc, subject) => acc + subject.recent_classes, 0);
 
   const handleViewSubject = (subject: Subject) => {
     setSelectedSubject(subject);
@@ -163,8 +186,13 @@ export default function FacultyPage() {
         )}
       </div>
 
-      <QuickStats />
-      <ViewToggle />
+      <QuickStats
+        subjectsCount={subjects.length}
+        totalStudents={totalStudents}
+        averageAttendance={averageAttendance}
+        totalClasses={totalClasses}
+      />
+      <ViewToggle activeView={activeView} onViewChange={setActiveView} />
 
       {/* Main Content */}
       {activeView === 'overview' && (

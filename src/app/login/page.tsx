@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { User, GraduationCap, Users, Shield } from 'lucide-react';
+import { GraduationCap, Users, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
