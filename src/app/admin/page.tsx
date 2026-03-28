@@ -8,16 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UserCreationForm } from '@/components/admin/UserCreationForm';
 import { useUserManagement } from '@/hooks/useUserManagement';
-import { 
-  Users, 
-  GraduationCap, 
-  BookOpen, 
+import {
+  Users,
+  GraduationCap,
+  BookOpen,
   BarChart3,
   Settings,
   Shield,
   TrendingUp,
   AlertTriangle,
-  Plus,
   UserPlus,
   FileText,
   Activity
@@ -58,7 +57,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* System Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
           <Card className="card-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Students</CardTitle>

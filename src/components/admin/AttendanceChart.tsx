@@ -47,7 +47,7 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
               const item = payload?.[0]?.payload
               return item?.fullDate ? new Date(item.fullDate).toLocaleDateString() : value
             }}
-            formatter={(value: any) => [`${value}%`, 'Attendance']}
+            formatter={(value: number | string) => [`${value}%`, 'Attendance']}
           />
           <Legend />
           <Line
