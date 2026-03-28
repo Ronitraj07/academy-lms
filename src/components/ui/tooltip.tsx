@@ -10,7 +10,7 @@ interface TooltipProps extends React.HTMLAttributes<HTMLDivElement> {
 const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
   ({ className, content, side = "top", delayMs = 200, children, ...props }, ref) => {
     const [isVisible, setIsVisible] = React.useState(false);
-    const timeoutRef = React.useRef<NodeJS.Timeout>();
+    const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const handleMouseEnter = () => {
       timeoutRef.current = setTimeout(() => setIsVisible(true), delayMs);
@@ -66,3 +66,4 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
 Tooltip.displayName = "Tooltip";
 
 export { Tooltip };
+
