@@ -57,6 +57,7 @@ function NotificationItem({ notification, onMarkAsRead }: {
             {!notification.is_read && (
               <button
                 onClick={() => onMarkAsRead(notification.id)}
+                aria-label={`Mark "${notification.title}" as read`}
                 className="ml-2 text-blue-500 hover:text-blue-600 transition-colors"
                 title="Mark as read"
               >
@@ -105,6 +106,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
+              aria-label={`Mark all ${unreadCount} notifications as read`}
               className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center"
               title="Mark all as read"
             >
@@ -140,8 +142,9 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
             
             {notifications.length > 10 && (
               <div className="p-3 text-center border-t border-gray-100 dark:border-gray-700">
-                <button 
+                <button
                   onClick={onClose}
+                  aria-label="View all notifications in notification center"
                   className="text-blue-500 hover:text-blue-600 text-sm font-medium"
                 >
                   View all notifications
@@ -157,6 +160,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
         <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-lg">
           <button
             onClick={onClose}
+            aria-label="Open notification center to view all notifications"
             className="w-full text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <MoreHorizontal className="w-4 h-4 inline mr-1" />

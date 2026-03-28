@@ -73,7 +73,10 @@ export default function StudentDashboard() {
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-3">
-              <button className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <button
+                aria-label="View full timetable"
+                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   View Timetable
                 </div>
@@ -81,8 +84,11 @@ export default function StudentDashboard() {
                   Full schedule
                 </div>
               </button>
-              
-              <button className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+
+              <button
+                aria-label="Check detailed attendance"
+                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   Check Attendance
                 </div>
@@ -90,8 +96,11 @@ export default function StudentDashboard() {
                   Detailed view
                 </div>
               </button>
-              
-              <button className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+
+              <button
+                aria-label="View all enrolled subjects"
+                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   View Subjects
                 </div>
@@ -99,8 +108,11 @@ export default function StudentDashboard() {
                   Course details
                 </div>
               </button>
-              
-              <button className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+
+              <button
+                aria-label="View all remarks and feedback"
+                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   All Remarks
                 </div>
