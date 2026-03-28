@@ -25,6 +25,12 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 346 77% 49%;
   --radius: 0.75rem;
+  --success: 142 76% 36%;
+  --success-foreground: 210 40% 98%;
+  --warning: 45 93% 47%;
+  --info: 217 32% 53%;
+  --status-online: 132 61% 41%;
+  --status-offline: 213 13% 47%;
 }
 
 .dark {
@@ -47,6 +53,12 @@
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 346 77% 49%;
+  --success: 142 65% 41%;
+  --success-foreground: 210 40% 98%;
+  --warning: 45 93% 50%;
+  --info: 201 100% 50%;
+  --status-online: 160 100% 40%;
+  --status-offline: 217 33% 46%;
 }
 
 * {
@@ -79,7 +91,7 @@ body {
 
 .card-hover:hover {
   transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 20px 25px -5px rgba(236, 72, 153, 0.15), 0 10px 10px -5px rgba(236, 72, 153, 0.1);
+  box-shadow: 0 20px 25px -5px hsl(var(--primary) / 0.15), 0 10px 10px -5px hsl(var(--primary) / 0.1);
 }
 
 .card-hover::before {
@@ -90,7 +102,7 @@ body {
   right: 0;
   bottom: 0;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, transparent 100%);
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -146,7 +158,7 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(285, 85%, 55%), hsl(217, 100%, 50%));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -160,10 +172,10 @@ body {
 
 /* Button Styles */
 .btn-gradient {
-  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(285, 85%, 55%) 100%);
   color: white;
   border: none;
-  box-shadow: 0 4px 14px 0 rgba(236, 72, 153, 0.39);
+  box-shadow: 0 4px 14px 0 hsl(var(--primary) / 0.39);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -185,14 +197,14 @@ body {
 }
 
 .btn-gradient:hover {
-  background: linear-gradient(135deg, #db2777 0%, #7c3aed 100%);
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.85) 0%, hsl(285, 85%, 45%) 100%);
+  box-shadow: 0 6px 20px hsl(var(--primary) / 0.5);
   transform: translateY(-2px) scale(1.02);
 }
 
 .btn-gradient:active {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.3);
 }
 
 .btn-glass {
@@ -304,8 +316,8 @@ body {
 }
 
 .mobile-nav-item.active {
-  color: #ec4899;
-  background: rgba(236, 72, 153, 0.1);
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
 }
 
 .mobile-nav-icon {
@@ -317,7 +329,7 @@ body {
 /* Scrollbar Styles */
 .scrollbar-modern {
   scrollbar-width: thin;
-  scrollbar-color: rgba(236, 72, 153, 0.3) transparent;
+  scrollbar-color: hsl(var(--primary) / 0.3) transparent;
 }
 
 .scrollbar-modern::-webkit-scrollbar {
@@ -331,14 +343,14 @@ body {
 }
 
 .scrollbar-modern::-webkit-scrollbar-thumb {
-  background: rgba(236, 72, 153, 0.3);
+  background: hsl(var(--primary) / 0.3);
   border-radius: 4px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 .scrollbar-modern::-webkit-scrollbar-thumb:hover {
-  background: rgba(236, 72, 153, 0.5);
+  background: hsl(var(--primary) / 0.5);
   background-clip: content-box;
 }
 
@@ -446,7 +458,7 @@ body {
   right: -8px;
   min-width: 20px;
   height: 20px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, hsl(var(--destructive)) 0%, hsl(var(--destructive) / 0.8) 100%);
   color: white;
   font-size: 12px;
   font-weight: bold;
@@ -461,7 +473,7 @@ body {
 .notification-dot {
   width: 8px;
   height: 8px;
-  background: #ec4899;
+  background: hsl(var(--primary));
   border-radius: 50%;
   position: absolute;
   top: 4px;
@@ -471,13 +483,13 @@ body {
 
 /* Status Indicators */
 .status-online {
-  background: #10b981;
+  background: hsl(var(--status-online));
   animation: pulse 2s infinite;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 0 4px hsla(var(--status-online), 0.3);
 }
 
 .status-offline {
-  background: #6b7280;
+  background: hsl(var(--status-offline));
 }
 
 .status-indicator {
@@ -507,7 +519,7 @@ body {
 
 .loading-spinner {
   border: 2px solid hsl(var(--muted));
-  border-top: 2px solid #ec4899;
+  border-top: 2px solid hsl(var(--primary));
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -528,11 +540,93 @@ body {
 
 /* Typography */
 .text-gradient {
-  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(285, 85%, 55%) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+
+/* Heading Hierarchy */
+h1, .h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2, .h2 {
+  font-size: 2rem;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+h3, .h3 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+h4, .h4 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+h5, .h5 {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+h6, .h6 {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+/* Body Text */
+body, p {
+  font-size: 1rem;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+.text-sm, small {
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75;
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  h1, .h1 {
+    font-size: 2rem;
+  }
+
+  h2, .h2 {
+    font-size: 1.5rem;
+  }
+
+  h3, .h3 {
+    font-size: 1.25rem;
+  }
 }
 
 /* Responsive Grid */
@@ -589,7 +683,7 @@ body {
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid #ec4899;
+  outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
 

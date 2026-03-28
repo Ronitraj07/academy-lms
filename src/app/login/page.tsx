@@ -16,7 +16,53 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const router = useRouter();
+
+  // Calculate password strength
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { strength: 0, label: '', color: '' };
+    let strength = 0;
+    if (pass.length >= 8) strength++;
+    if (pass.length >= 12) strength++;
+    if (/[A-Z]/.test(pass)) strength++;
+    if (/[a-z]/.test(pass)) strength++;
+    if (/[0-9]/.test(pass)) strength++;
+    if (/[^A-Za-z0-9]/.test(pass)) strength++;
+
+    const levels = [
+      { strength: 0, label: '', color: '' },
+      { strength: 1, label: 'Weak', color: 'bg-destructive' },
+      { strength: 2, label: 'Fair', color: 'bg-warning' },
+      { strength: 3, label: 'Good', color: 'bg-info' },
+      { strength: 4, label: 'Strong', color: 'bg-success' },
+    ];
+
+    return levels[Math.min(Math.ceil(strength / 1.5), 4)];
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+
+  // Email validation
+  const validateEmail = (value: string) => {
+    if (!value) {
+      setEmailError('Email is required');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (value) validateEmail(value);
+  };
 
   // Map UI roles to actual roles for authentication
   const getRoleCredentials = (uiRole: UIRole) => {
@@ -38,8 +84,13 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill in all fields');
+
+    // Validate inputs
+    const isEmailValid = validateEmail(email);
+    if (!isEmailValid) return;
+
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
 
@@ -186,6 +237,8 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setSelectedRole('student')}
+                aria-label="Login as Student"
+                aria-pressed={selectedRole === 'student'}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300',
                   selectedRole === 'student'
@@ -199,6 +252,8 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setSelectedRole('staff')}
+                aria-label="Login as Staff"
+                aria-pressed={selectedRole === 'staff'}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300',
                   selectedRole === 'staff'
@@ -214,8 +269,12 @@ export default function LoginPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl slide-in-up">
-              <p className="text-sm text-red-400">{error}</p>
+            <div
+              className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl slide-in-up"
+              role="alert"
+              aria-live="polite"
+            >
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 
@@ -234,13 +293,24 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-800/50 border border-gray-700/50 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 hover:border-gray-600/50"
+                  onChange={handleEmailChange}
+                  aria-label="Email address"
+                  aria-describedby={emailError ? "email-error" : undefined}
+                  aria-invalid={emailError ? "true" : "false"}
+                  className={cn(
+                    "w-full pl-12 pr-4 py-3.5 bg-gray-800/50 border rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 hover:border-gray-600/50",
+                    emailError ? "border-destructive/50" : "border-gray-700/50"
+                  )}
                   placeholder="Enter your email"
                   required
                   autoComplete="email"
                 />
               </div>
+              {emailError && (
+                <p id="email-error" className="mt-2 text-sm text-destructive">
+                  {emailError}
+                </p>
+              )}
             </div>
 
             {/* Password Input */}
@@ -265,6 +335,8 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  aria-label="Password"
+                  aria-invalid={error ? "true" : "false"}
                   className="w-full pl-12 pr-12 py-3.5 bg-gray-800/50 border border-gray-700/50 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 hover:border-gray-600/50"
                   placeholder="Enter your password"
                   required
@@ -273,6 +345,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
                 >
                   {showPassword ? (
@@ -282,16 +355,47 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {/* Password Strength Indicator */}
+              {password && (
+                <div className="mt-2 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-300",
+                          passwordStrength.color || "bg-gray-600"
+                        )}
+                        style={{
+                          width: `${(passwordStrength.strength / 4) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    {passwordStrength.label && (
+                      <span className="text-xs font-medium text-gray-400">
+                        {passwordStrength.label}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
+              aria-busy={loading}
               className="w-full py-3.5 px-6 bg-gradient-to-r from-primary via-pink-600 to-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
             >
-              <span className="relative z-10">
-                {loading ? 'Signing in...' : `Login as ${selectedRole === 'student' ? 'Student' : 'Staff'}`}
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {loading ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  `Login as ${selectedRole === 'student' ? 'Student' : 'Staff'}`
+                )}
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-pink-600 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </button>

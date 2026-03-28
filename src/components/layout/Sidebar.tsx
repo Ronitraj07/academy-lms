@@ -256,6 +256,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => onClose()}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden fade-in",
                     isActive
