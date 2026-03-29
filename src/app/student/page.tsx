@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { Calendar, TrendingUp, BookOpen, MessageSquare } from 'lucide-react';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useTimetable } from '@/hooks/useTimetable';
 import { useRemarks } from '@/hooks/useRemarks';
@@ -9,8 +11,42 @@ import { TodayClasses } from '@/components/student/TodayClasses';
 import { AttendanceOverview } from '@/components/student/AttendanceOverview';
 import { RecentRemarks } from '@/components/student/RecentRemarks';
 
+const quickActions = [
+  {
+    label: 'View Timetable',
+    description: 'Full schedule',
+    href: '/timetable',
+    icon: Calendar,
+    color: 'text-blue-500',
+    bg: 'bg-blue-50 dark:bg-blue-900/20',
+  },
+  {
+    label: 'Check Attendance',
+    description: 'Detailed view',
+    href: '/attendance',
+    icon: TrendingUp,
+    color: 'text-green-500',
+    bg: 'bg-green-50 dark:bg-green-900/20',
+  },
+  {
+    label: 'View Subjects',
+    description: 'Course details',
+    href: '/subjects',
+    icon: BookOpen,
+    color: 'text-purple-500',
+    bg: 'bg-purple-50 dark:bg-purple-900/20',
+  },
+  {
+    label: 'All Remarks',
+    description: 'Feedback history',
+    href: '/remarks',
+    icon: MessageSquare,
+    color: 'text-orange-500',
+    bg: 'bg-orange-50 dark:bg-orange-900/20',
+  },
+];
+
 export default function StudentDashboard() {
-  // Fetch all student data
   const { stats: attendanceStats, loading: attendanceLoading } = useAttendance();
   const { todaySchedule, getCurrentClass, getNextClass, loading: timetableLoading } = useTimetable();
   const { remarks, loading: remarksLoading } = useRemarks();
@@ -19,9 +55,8 @@ export default function StudentDashboard() {
   const currentClass = getCurrentClass();
   const nextClass = getNextClass();
 
-  // Calculate enrollment count (assuming it's the number of subjects in stats)
-  const enrolledSubjects = attendanceStats?.subjectWise 
-    ? Object.keys(attendanceStats.subjectWise).length 
+  const enrolledSubjects = attendanceStats?.subjectWise
+    ? Object.keys(attendanceStats.subjectWise).length
     : 0;
 
   return (
@@ -55,7 +90,7 @@ export default function StudentDashboard() {
             nextClass={nextClass}
             loading={timetableLoading}
           />
-          
+
           <AttendanceOverview
             stats={attendanceStats}
             loading={attendanceLoading}
@@ -73,53 +108,24 @@ export default function StudentDashboard() {
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-3">
-              <button
-                aria-label="View full timetable"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  View Timetable
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Full schedule
-                </div>
-              </button>
-
-              <button
-                aria-label="Check detailed attendance"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Check Attendance
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Detailed view
-                </div>
-              </button>
-
-              <button
-                aria-label="View all enrolled subjects"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  View Subjects
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Course details
-                </div>
-              </button>
-
-              <button
-                aria-label="View all remarks and feedback"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  All Remarks
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Feedback history
-                </div>
-              </button>
+              {quickActions.map(({ label, description, href, icon: Icon, color, bg }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 group block"
+                >
+                  <div className={`inline-flex p-2 rounded-lg ${bg} mb-2 transition-transform duration-200 group-hover:scale-110`}>
+                    <Icon className={`w-4 h-4 ${color}`} />
+                  </div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {label}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {description}
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
