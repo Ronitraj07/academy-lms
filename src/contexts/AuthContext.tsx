@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { Profile } from '@/types';
@@ -20,14 +20,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (isDemoMode) {
-      // Mock profile for demo mode
+      // Read actual role stored during login — fixes role mismatch bug
+      const stored = JSON.parse(localStorage.getItem('demo_user') || '{}');
+      const role = stored.role || 'student';
+      const email = stored.email || 'demo@academy.test';
+      const id = stored.id || `demo-${role}-id`;
       setProfile({
-        id: 'demo-profile-id',
-        user_id: 'demo-user-id',
-        full_name: 'Demo User',
-        role: 'student',
+        id: `${id}-profile`,
+        user_id: id,
+        full_name: email.split('@')[0],
+        role,
       });
       return;
     }
@@ -53,15 +57,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error refreshing profile:', error);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (isDemoMode) {
-      // In demo mode, simulate a logged-in user
-      setUser({
-        id: 'demo-user-id',
-        email: 'demo@academy.test',
-      } as User);
+      const stored = JSON.parse(localStorage.getItem('demo_user') || '{}');
+      // If no demo session exists, stay unauthenticated (middleware handles redirect to /login)
+      if (stored.email) {
+        setUser({
+          id: stored.id || 'demo-user-id',
+          email: stored.email,
+        } as User);
+      }
       setLoading(false);
       return;
     }
@@ -89,10 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setProfile(null);
     }
-  }, [user]);
+  }, [user, refreshProfile]);
 
   const signOut = async () => {
     if (isDemoMode) {
+      localStorage.removeItem('demo_user');
       setUser(null);
       setProfile(null);
       return;
