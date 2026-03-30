@@ -15,35 +15,31 @@ function UsersPageContent() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithProfile | null>(null);
 
-  const handleCreateUser = () => {
-    setShowCreateForm(true);
-  };
-
   const statsCards = [
     {
       title: 'Total Users',
-      value: stats?.totalUsers || 0,
+      value: loading ? null : stats?.totalUsers || 0,
       description: 'All active users',
       icon: Users,
       trend: `+${stats?.newUsersThisMonth || 0} this month`,
     },
     {
       title: 'Students',
-      value: stats?.studentCount || 0,
+      value: loading ? null : stats?.studentCount || 0,
       description: 'Enrolled students',
       icon: UserPlus,
       trend: 'Active enrollments',
     },
     {
       title: 'Faculty',
-      value: stats?.facultyCount || 0,
+      value: loading ? null : stats?.facultyCount || 0,
       description: 'Teaching staff',
       icon: Filter,
       trend: 'Teaching positions',
     },
     {
       title: 'Admins',
-      value: stats?.adminCount || 0,
+      value: loading ? null : stats?.adminCount || 0,
       description: 'System administrators',
       icon: TrendingUp,
       trend: 'With full access',
@@ -71,19 +67,17 @@ function UsersPageContent() {
           return (
             <Card key={stat.title} className="card-hover card-elevated">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <Icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
-                </p>
-                <div className="mt-2 text-xs text-green-600 dark:text-green-400">
-                  {stat.trend}
-                </div>
+                {stat.value === null ? (
+                  <div className="skeleton h-8 w-16 rounded mb-1" />
+                ) : (
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                )}
+                <p className="text-xs text-muted-foreground">{stat.description}</p>
+                <div className="mt-2 text-xs text-green-600 dark:text-green-400">{stat.trend}</div>
               </CardContent>
             </Card>
           );
@@ -93,15 +87,15 @@ function UsersPageContent() {
       <Card className="card-elevated">
         <CardHeader>
           <CardTitle>All Users</CardTitle>
-          <CardDescription>
-            View and manage all users in the system
-          </CardDescription>
+          <CardDescription>View and manage all users in the system</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <UserManagementTable 
-            onEditUser={setEditingUser} 
-            onCreateUser={handleCreateUser}
-          />
+          <div className="overflow-x-auto">
+            <UserManagementTable
+              onEditUser={setEditingUser}
+              onCreateUser={() => setShowCreateForm(true)}
+            />
+          </div>
         </CardContent>
       </Card>
 
