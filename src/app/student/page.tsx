@@ -20,36 +20,37 @@ export default function StudentDashboard() {
   const currentClass = getCurrentClass();
   const nextClass = getNextClass();
 
-  const enrolledSubjects = attendanceStats?.subjectWise 
-    ? Object.keys(attendanceStats.subjectWise).length 
+  const enrolledSubjects = attendanceStats?.subjectWise
+    ? Object.keys(attendanceStats.subjectWise).length
     : 0;
 
+  // #15 — hrefs corrected to match actual Next.js route structure under /student/
   const quickActions = [
     {
       label: 'View Timetable',
       description: 'Full schedule',
-      href: '/timetable',
+      href: '/student/timetable',
       icon: Calendar,
       ariaLabel: 'View full timetable'
     },
     {
       label: 'Check Attendance',
       description: 'Detailed view',
-      href: '/attendance',
+      href: '/student/attendance',
       icon: ClipboardCheck,
       ariaLabel: 'Check detailed attendance'
     },
     {
       label: 'View Subjects',
       description: 'Course details',
-      href: '/subjects',
+      href: '/student/subjects',
       icon: BookOpen,
       ariaLabel: 'View all enrolled subjects'
     },
     {
       label: 'All Remarks',
       description: 'Feedback history',
-      href: '/remarks',
+      href: '/student/remarks',
       icon: MessageSquare,
       ariaLabel: 'View all remarks and feedback'
     }
@@ -86,7 +87,7 @@ export default function StudentDashboard() {
             nextClass={nextClass}
             loading={timetableLoading}
           />
-          
+
           <AttendanceOverview
             stats={attendanceStats}
             loading={attendanceLoading}
