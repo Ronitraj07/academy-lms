@@ -4,10 +4,9 @@ import { useState, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import {
-  GraduationCap, Eye, EyeOff, Mail, Lock,
+  BookOpen, Eye, EyeOff, Mail, Lock,
   Users, Briefcase, AlertCircle, ChevronDown,
-  BookOpen, BarChart3, Shield, Zap, CheckCircle2,
-  ArrowRight
+  Zap, CheckCircle2, ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,73 +14,11 @@ type UIRole     = 'student' | 'staff';
 type ActualRole = 'student' | 'faculty' | 'admin';
 
 const DEMO_CREDS = [
-  { role: 'Student', tag: 'student', email: 'student@academy.test', password: 'student123!', color: 'bg-emerald-500' },
-  { role: 'Faculty', tag: 'staff',   email: 'faculty@academy.test', password: 'faculty123!', color: 'bg-blue-500'    },
-  { role: 'Admin',   tag: 'staff',   email: 'admin@academy.test',   password: 'admin123!',   color: 'bg-rose-500'    },
+  { role: 'Student', tag: 'student', email: 'student@academy.test', password: 'student123!', color: 'bg-emerald-400' },
+  { role: 'Faculty', tag: 'staff',   email: 'faculty@academy.test', password: 'faculty123!', color: 'bg-blue-400'    },
+  { role: 'Admin',   tag: 'staff',   email: 'admin@academy.test',   password: 'admin123!',   color: 'bg-rose-400'    },
 ] as const;
 
-const FEATURES = [
-  { icon: BookOpen,  label: 'Smart Timetable',      sub: 'Auto-generated schedules'      },
-  { icon: BarChart3, label: 'Live Analytics',        sub: 'Real-time attendance insights'  },
-  { icon: Shield,    label: 'Role-based Access',     sub: 'Student · Faculty · Admin'      },
-  { icon: Zap,       label: 'Instant Notifications', sub: 'Never miss an update'           },
-] as const;
-
-/* ─── Field component ─────────────────────────────────────────────────────── */
-function Field({
-  id, label, type, value, onChange, placeholder, autoComplete,
-  error, rightSlot, icon: Icon,
-}: {
-  id: string; label: string; type: string;
-  value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string; autoComplete: string;
-  error?: string; rightSlot?: React.ReactNode;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-foreground mb-1.5">
-        {label}
-      </label>
-      <div className="relative group">
-        <Icon className={cn(
-          'absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-colors duration-150',
-          error ? 'text-destructive' : 'text-muted-foreground group-focus-within:text-primary'
-        )} />
-        <input
-          id={id}
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          required
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${id}-error` : undefined}
-          className={cn(
-            'w-full pl-10 pr-4 min-h-[48px] text-base rounded-xl border',
-            // card bg so inputs have depth on both light + dark
-            'bg-card text-foreground placeholder:text-muted-foreground/60',
-            'transition-all duration-150 focus:outline-none focus:ring-2',
-            'hover:border-foreground/25',
-            error
-              ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive'
-              : 'border-border focus:ring-primary/20 focus:border-primary',
-            rightSlot && 'pr-12'
-          )}
-        />
-        {rightSlot}
-      </div>
-      {error && (
-        <p id={`${id}-error`} className="mt-1.5 text-xs text-destructive flex items-center gap-1">
-          <AlertCircle className="h-3 w-3 shrink-0" />{error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function LoginPage() {
   const uid = useId();
   const router = useRouter();
@@ -121,20 +58,15 @@ export default function LoginPage() {
     setLoading(true); setError('');
 
     try {
-      /* ── DEMO MODE ── use isDemoMode from supabase.ts (single source of truth) */
       if (isDemoMode) {
         const match = DEMO_CREDS.find(
-          c => c.email.toLowerCase() === email.trim().toLowerCase()
-            && c.password === password
+          c => c.email.toLowerCase() === email.trim().toLowerCase() && c.password === password
         );
         if (match) {
           const actualRole: ActualRole =
-            match.role === 'Admin' ? 'admin'
-            : match.role === 'Faculty' ? 'faculty'
-            : 'student';
+            match.role === 'Admin' ? 'admin' : match.role === 'Faculty' ? 'faculty' : 'student';
           localStorage.setItem('demo_user', JSON.stringify({
-            email: match.email,
-            role: actualRole,
+            email: match.email, role: actualRole,
             id: `demo-${actualRole}-1`,
             full_name: match.role + ' User',
           }));
@@ -146,231 +78,184 @@ export default function LoginPage() {
         return;
       }
 
-      /* ── REAL SUPABASE ── */
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+        email: email.trim(), password,
       });
-
-      if (authErr) {
-        // If Supabase creds fail but matches demo creds, show helpful message
-        const isDemoCred = DEMO_CREDS.some(
-          c => c.email.toLowerCase() === email.trim().toLowerCase()
-        );
-        if (isDemoCred) {
-          setError('This appears to be a demo credential. The app is running in live mode — please use a real account or check your .env setup.');
-        } else {
-          setError(authErr.message);
-        }
-        return;
-      }
-
+      if (authErr) { setError(authErr.message); return; }
       if (data.user) {
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .single();
-        const r: ActualRole = profile?.role || 'student';
-        redirect(r);
+          .from('profiles').select('role').eq('user_id', data.user.id).single();
+        redirect(profile?.role || 'student');
       }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    } catch { setError('An unexpected error occurred. Please try again.'); }
+    finally   { setLoading(false); }
   };
 
   const handleGoogle = async () => {
-    if (isDemoMode) {
-      setError('Google sign-in is not available in demo mode.'); return;
-    }
+    if (isDemoMode) { setError('Google sign-in is not available in demo mode.'); return; }
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/student` },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) setError(error.message);
     } catch { setError('Failed to sign in with Google.'); }
     finally  { setLoading(false); }
   };
 
+  const roleLabel = role === 'student' ? 'Student' : 'Staff';
+
   return (
-    <div className="min-h-screen flex lg:flex-row flex-col bg-muted/30">
-
-      {/* ── LEFT brand panel ── desktop only ──────────────────────────────── */}
-      <div className="
-        hidden lg:flex flex-col justify-between
-        w-[460px] xl:w-[500px] shrink-0
-        relative overflow-hidden
-        bg-gradient-to-br from-primary via-violet-600 to-indigo-700
-        p-10 xl:p-14
-      ">
-        {/* decorative blobs */}
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute top-1/2  -right-32 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute -bottom-24 left-1/3  w-72 h-72 rounded-full bg-white/8 blur-3xl" />
-          <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id={`${uid}-g`} width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill={`url(#${uid}-g)`}/>
-          </svg>
-        </div>
-
-        {/* logo */}
-        <div className="relative flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center ring-1 ring-white/20">
-            <GraduationCap className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <p className="text-white font-bold text-lg leading-tight">Academy LMS</p>
-            <p className="text-white/55 text-xs">Management System</p>
-          </div>
-        </div>
-
-        {/* headline + features */}
-        <div className="relative space-y-8">
-          <div>
-            <h1 className="text-white font-bold leading-[1.15]" style={{fontSize:'clamp(2rem,2.8vw,2.6rem)'}}>
-              Education,<br/>reimagined.
-            </h1>
-            <p className="text-white/65 text-sm mt-3 leading-relaxed max-w-xs">
-              A unified platform for students, faculty, and administrators — built for clarity and scale.
-            </p>
-          </div>
-
-          <ul className="space-y-3.5">
-            {FEATURES.map(({ icon: Icon, label, sub }) => (
-              <li key={label} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white/10 ring-1 ring-white/15 flex items-center justify-center shrink-0">
-                  <Icon className="h-4 w-4 text-white/85" />
-                </div>
-                <div>
-                  <p className="text-white text-sm font-medium">{label}</p>
-                  <p className="text-white/50 text-xs">{sub}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex gap-2.5">
-            {[{v:'2.4k+',l:'Students'},{v:'98%',l:'Uptime'},{v:'150+',l:'Subjects'}].map(s=>(
-              <div key={s.l} className="flex-1 bg-white/10 rounded-2xl p-3 ring-1 ring-white/15 text-center">
-                <p className="text-white font-bold text-base leading-tight">{s.v}</p>
-                <p className="text-white/55 text-[11px] mt-0.5">{s.l}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="relative text-white/35 text-xs">© {new Date().getFullYear()} Academy LMS</p>
+    /*
+     * Full-screen deep navy background with a soft radial blue glow in the
+     * centre — matching the reference design.
+     */
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-10"
+      style={{
+        background: 'radial-gradient(ellipse 80% 60% at 50% 40%, #0d2a4a 0%, #07111f 55%, #040d18 100%)',
+      }}
+    >
+      {/* glow orb behind the card */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 flex items-center justify-center"
+      >
+        <div
+          className="w-[520px] h-[520px] rounded-full opacity-20"
+          style={{
+            background: 'radial-gradient(circle, #1e6fff 0%, transparent 70%)',
+            filter: 'blur(60px)',
+          }}
+        />
       </div>
 
-      {/* ── RIGHT form column ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-4 py-10 sm:py-14">
-
-        {/* mobile logo */}
-        <div className="lg:hidden flex items-center gap-2 mb-8">
-          <div className="w-9 h-9 bg-gradient-to-br from-primary to-violet-600 rounded-xl flex items-center justify-center shadow-primary">
-            <GraduationCap className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-lg text-gradient">Academy LMS</span>
-        </div>
-
-        {/* form card */}
-        <div className="w-full max-w-[420px] bg-card rounded-2xl shadow-modal border border-border p-6 sm:p-8 animate-fade-up">
+      {/* glass card */}
+      <div
+        className="relative w-full max-w-[460px] rounded-2xl overflow-hidden animate-fade-up"
+        style={{
+          background: 'rgba(13, 22, 38, 0.82)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
+        }}
+      >
+        <div className="px-8 py-9">
 
           {/* heading */}
-          <div className="mb-7">
-            <h2 className="text-foreground font-bold text-2xl">Welcome back</h2>
-            <p className="text-muted-foreground text-sm mt-1">Sign in to continue to Academy LMS</p>
+          <div className="text-center mb-7">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <BookOpen className="h-6 w-6 text-white" strokeWidth={2} />
+              <h1 className="text-white font-bold text-2xl tracking-tight">Sign in to Academy</h1>
+            </div>
+            <p className="text-white/45 text-sm">Access your dashboard</p>
           </div>
 
-          {/* role selector */}
-          <div className="mb-6">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">I am a</p>
-            <div className="relative flex p-1 bg-muted rounded-xl">
-              {/* sliding pill */}
-              <div
-                aria-hidden
-                className="absolute top-1 bottom-1 rounded-lg bg-card shadow-sm border border-border/50 transition-transform duration-200"
-                style={{
-                  width: 'calc(50% - 6px)',
-                  transform: role === 'student' ? 'translateX(4px)' : 'translateX(calc(100% + 4px))',
-                }}
-              />
-              {(['student','staff'] as const).map(r => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => { setRole(r); setError(''); }}
-                  aria-pressed={role === r}
-                  className={cn(
-                    'relative z-10 flex-1 flex items-center justify-center gap-1.5',
-                    'min-h-[40px] rounded-lg text-sm font-medium transition-colors duration-150',
-                    role === r ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
-                  )}
-                >
-                  {r === 'student' ? <Users className="h-3.5 w-3.5" /> : <Briefcase className="h-3.5 w-3.5" />}
-                  {r === 'student' ? 'Student' : 'Staff / Admin'}
-                </button>
-              ))}
-            </div>
+          {/* divider */}
+          <div className="h-px bg-white/8 mb-6" />
+
+          {/* role tabs */}
+          <div
+            className="flex p-1 mb-6 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            {(['student','staff'] as const).map(r => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => { setRole(r); setError(''); }}
+                aria-pressed={role === r}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 min-h-[40px] rounded-md text-sm font-semibold transition-all duration-200',
+                  role === r
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-white/45 hover:text-white/70'
+                )}
+              >
+                {r === 'student' ? <Users className="h-3.5 w-3.5" /> : <Briefcase className="h-3.5 w-3.5" />}
+                {r === 'student' ? 'Student' : 'Staff'}
+              </button>
+            ))}
           </div>
 
           {/* error */}
           {error && (
             <div
               role="alert" aria-live="assertive"
-              className="mb-5 flex items-start gap-2.5 px-3.5 py-3 bg-destructive/8 border border-destructive/20 rounded-xl text-sm text-destructive animate-scale-in"
+              className="mb-5 flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-sm animate-scale-in"
+              style={{
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.25)',
+                color: '#fca5a5',
+              }}
             >
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
               <span>{error}</span>
             </div>
           )}
 
           {/* form */}
           <form onSubmit={handleLogin} className="space-y-4" noValidate>
-            <Field
-              id={`${uid}-em`}
-              label="Email address"
-              type="email"
-              value={email}
-              onChange={e => { setEmail(e.target.value); if (emailErr) validateEmail(e.target.value); }}
-              placeholder="you@example.com"
-              autoComplete="email"
-              error={emailErr}
-              icon={Mail}
-            />
 
+            {/* email */}
             <div>
-              <Field
-                id={`${uid}-pw`}
-                label="Password"
-                type={showPw ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                icon={Lock}
-                rightSlot={
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(v => !v)}
-                    aria-label={showPw ? 'Hide password' : 'Show password'}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                }
-              />
+              <label htmlFor={`${uid}-em`} className="block text-sm font-medium text-white/60 mb-1.5">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none transition-colors group-focus-within:text-blue-400" />
+                <input
+                  id={`${uid}-em`}
+                  type="email"
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); if (emailErr) validateEmail(e.target.value); }}
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                  required
+                  className={cn(
+                    'w-full pl-10 pr-4 h-12 text-base rounded-xl text-white placeholder-white/25',
+                    'transition-all duration-150 focus:outline-none',
+                    'focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60',
+                    emailErr
+                      ? 'border border-red-500/50'
+                      : 'border border-white/10 hover:border-white/20'
+                  )}
+                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                />
+              </div>
+              {emailErr && (
+                <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3 shrink-0" />{emailErr}
+                </p>
+              )}
+            </div>
+
+            {/* password */}
+            <div>
+              <label htmlFor={`${uid}-pw`} className="block text-sm font-medium text-white/60 mb-1.5">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none transition-colors group-focus-within:text-blue-400" />
+                <input
+                  id={`${uid}-pw`}
+                  type={showPw ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••"
+                  autoComplete="current-password"
+                  required
+                  className="w-full pl-10 pr-12 h-12 text-base rounded-xl text-white placeholder-white/30 border border-white/10 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60 transition-all duration-150"
+                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/60 transition-colors"
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               <div className="flex justify-end mt-1.5">
-                <button type="button" className="text-xs text-primary hover:text-primary/75 font-medium transition-colors">
+                <button type="button" className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors">
                   Forgot password?
                 </button>
               </div>
@@ -381,21 +266,17 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               aria-busy={loading}
-              className={cn(
-                'group relative w-full min-h-[48px] rounded-xl font-semibold text-sm text-white overflow-hidden',
-                'bg-gradient-to-r from-primary to-violet-600',
-                'shadow-primary transition-all duration-150',
-                'hover:brightness-110 hover:-translate-y-px hover:shadow-lg',
-                'active:translate-y-0 active:brightness-95',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                'disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none'
-              )}
+              className="group relative w-full h-12 rounded-xl font-bold text-sm text-white overflow-hidden transition-all duration-150 hover:brightness-110 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              style={{
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                boxShadow: '0 4px 20px rgba(37,99,235,0.45)',
+              }}
             >
-              {/* shimmer sweep */}
+              {/* shimmer */}
               <span
                 aria-hidden
                 className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500"
-                style={{background:'linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.18) 55%,transparent 70%)'}}
+                style={{ background: 'linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.15) 55%,transparent 70%)' }}
               />
               <span className="relative flex items-center justify-center gap-2">
                 {loading ? (
@@ -408,7 +289,7 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    Sign in
+                    Login as {roleLabel}
                     <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" />
                   </>
                 )}
@@ -417,9 +298,10 @@ export default function LoginPage() {
           </form>
 
           {/* divider */}
-          <div className="relative my-5">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-            <div className="relative flex justify-center"><span className="px-3 bg-card text-xs text-muted-foreground">or continue with</span></div>
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-white/8" />
+            <span className="text-xs text-white/30">or</span>
+            <div className="flex-1 h-px bg-white/8" />
           </div>
 
           {/* google */}
@@ -427,13 +309,11 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogle}
             disabled={loading}
-            className={cn(
-              'w-full min-h-[48px] flex items-center justify-center gap-2.5 px-5 rounded-xl',
-              'bg-card border border-border text-foreground text-sm font-medium',
-              'hover:bg-muted transition-colors duration-150',
-              'disabled:opacity-55 disabled:cursor-not-allowed',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30'
-            )}
+            className="w-full h-12 flex items-center justify-center gap-3 rounded-xl text-sm font-semibold text-white/80 hover:text-white transition-all duration-150 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           >
             <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden>
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -441,15 +321,15 @@ export default function LoginPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Continue with Google
+            Sign in with Google
           </button>
 
           {/* demo creds */}
-          <div className="mt-5 rounded-xl border border-border overflow-hidden">
+          <div className="mt-5 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
             <button
               type="button"
               onClick={() => setShowDemo(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 text-sm text-white/35 hover:text-white/55 transition-colors"
               aria-expanded={showDemo}
             >
               <span className="flex items-center gap-2 font-medium">
@@ -458,31 +338,32 @@ export default function LoginPage() {
               </span>
               <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', showDemo && 'rotate-180')} />
             </button>
-
             {showDemo && (
-              <div className="border-t border-border px-3 pb-3 pt-2.5 space-y-1.5 animate-fade-up">
-                <p className="text-[11px] text-muted-foreground px-1 mb-2">Click to auto-fill &amp; sign in:</p>
+              <div
+                className="px-3 pb-3 pt-2 space-y-1.5 animate-fade-up"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <p className="text-[11px] text-white/30 px-1 mb-2">Click to auto-fill:</p>
                 {DEMO_CREDS.map(c => (
                   <button
                     key={c.role}
                     type="button"
                     onClick={() => fillCred(c)}
                     className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left',
-                      'border transition-all duration-150',
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150',
                       fillAnim === c.role
-                        ? 'bg-primary/8 border-primary/25'
-                        : 'border-transparent hover:bg-muted/50 hover:border-border'
+                        ? 'bg-blue-600/15 border border-blue-500/25'
+                        : 'border border-transparent hover:bg-white/5 hover:border-white/8'
                     )}
                   >
                     <span className={cn('w-2 h-2 rounded-full shrink-0', c.color)} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-foreground">{c.role}</p>
-                      <p className="text-[11px] font-mono text-muted-foreground truncate">{c.email}</p>
+                      <p className="text-xs font-semibold text-white/75">{c.role}</p>
+                      <p className="text-[11px] font-mono text-white/35 truncate">{c.email}</p>
                     </div>
                     {fillAnim === c.role
-                      ? <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                      : <ArrowRight   className="h-3   w-3   text-muted-foreground/40 shrink-0" />
+                      ? <CheckCircle2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                      : <ArrowRight   className="h-3   w-3   text-white/20  shrink-0" />
                     }
                   </button>
                 ))}
@@ -490,8 +371,12 @@ export default function LoginPage() {
             )}
           </div>
 
-          <p className="text-center text-[11px] text-muted-foreground mt-6">
-            © {new Date().getFullYear()} Academy LMS · All rights reserved
+          {/* footer */}
+          <p className="text-center text-sm text-white/30 mt-6">
+            Not registered?{' '}
+            <button type="button" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+              Create an account
+            </button>
           </p>
         </div>
       </div>
