@@ -2,191 +2,148 @@
 
 import { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
-import { 
-  Bell, 
-  MessageCircle, 
-  UserCheck, 
-  Megaphone, 
+import {
+  Bell,
+  MessageCircle,
+  UserCheck,
+  Megaphone,
   Shield,
   Search,
-  Filter,
   Check,
   CheckCheck,
-  Trash2,
-  Archive,
   Eye,
-  EyeOff
+  EyeOff,
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import type { Notification } from '@/hooks/useNotifications';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const typeIcons = {
-  attendance: UserCheck,
-  remark: MessageCircle,
-  announcement: Megaphone,
-  admin_message: Shield
+  attendance:    UserCheck,
+  remark:        MessageCircle,
+  announcement:  Megaphone,
+  admin_message: Shield,
 };
 
 const typeColors = {
-  attendance: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
-  remark: 'text-green-500 bg-green-100 dark:bg-green-900/30',
-  announcement: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
-  admin_message: 'text-red-500 bg-red-100 dark:bg-red-900/30'
+  attendance:    'text-blue-500   bg-blue-100   dark:bg-blue-900/30',
+  remark:        'text-green-500  bg-green-100  dark:bg-green-900/30',
+  announcement:  'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
+  admin_message: 'text-red-500    bg-red-100    dark:bg-red-900/30',
 };
 
 const typeLabels = {
-  attendance: 'Attendance',
-  remark: 'Remark',
-  announcement: 'Announcement',
-  admin_message: 'Admin Message'
+  attendance:    'Attendance',
+  remark:        'Remark',
+  announcement:  'Announcement',
+  admin_message: 'Admin Message',
 };
 
-export function NotificationCenter() {
-  const { 
-    notifications, 
-    unreadCount, 
-    loading, 
-    markAsRead, 
-    markAllAsRead 
-  } = useNotifications();
+function NotificationCard({ notification, onMarkAsRead }: {
+  notification: Notification;
+  onMarkAsRead: (id: string) => void;
+}) {
+  const IconComponent = typeIcons[notification.type];
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  return (
+    <div
+      className={cn(
+        'p-6 border rounded-lg hover:shadow-md transition-all',
+        notification.is_read
+          ? 'bg-card border-border'
+          : 'bg-primary/5 border-primary/30',
+      )}
+    >
+      <div className="flex items-start space-x-4">
+        <div className={cn('flex-shrink-0 p-2 rounded-lg', typeColors[notification.type])}>
+          <IconComponent className="w-5 h-5" />
+        </div>
 
-  // Filter notifications
-  const filteredNotifications = notifications.filter(notification => {
-    const matchesSearch = notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         notification.content.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesType = filterType === 'all' || notification.type === filterType;
-    
-    const matchesRead = !showUnreadOnly || !notification.is_read;
-    
-    return matchesSearch && matchesType && matchesRead;
-  });
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <h3 className="text-base font-semibold text-foreground">
+                {notification.title}
+              </h3>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground mt-1">
+                {typeLabels[notification.type]}
+              </span>
+            </div>
 
-  const NotificationCard = ({ notification }: { notification: Notification }) => {
-    const IconComponent = typeIcons[notification.type];
-
-    return (
-      <div
-        className={`p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all ${
-          !notification.is_read 
-            ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' 
-            : 'bg-white dark:bg-gray-800'
-        }`}
-      >
-        <div className="flex items-start space-x-4">
-          {/* Icon */}
-          <div className={`flex-shrink-0 p-2 rounded-lg ${typeColors[notification.type]}`}>
-            <IconComponent className="w-5 h-5" />
+            {!notification.is_read && (
+              <button
+                onClick={() => onMarkAsRead(notification.id)}
+                className="p-1 text-primary hover:text-primary/80 transition-colors"
+                title="Mark as read"
+                aria-label={`Mark "${notification.title}" as read`}
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                  {notification.title}
-                </h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 mt-1">
-                  {typeLabels[notification.type]}
-                </span>
-              </div>
+          <p className="text-sm text-muted-foreground mb-3">{notification.content}</p>
 
-              <div className="flex items-center space-x-2">
-                {!notification.is_read ? (
-                  <button
-                    onClick={() => markAsRead(notification.id)}
-                    className="p-1 text-blue-500 hover:text-blue-600 transition-colors"
-                    title="Mark as read"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <span className="p-1 text-gray-400">
-                    <Eye className="w-4 h-4" />
-                  </span>
-                )}
-              </div>
+          {notification.metadata && (
+            <div className="mb-3 p-3 bg-muted rounded text-sm">
+              <pre className="whitespace-pre-wrap font-mono text-xs">
+                {JSON.stringify(notification.metadata, null, 2)}
+              </pre>
             </div>
+          )}
 
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              {notification.content}
-            </p>
-
-            {/* Metadata */}
-            {notification.metadata && (
-              <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded text-sm">
-                <pre className="whitespace-pre-wrap font-mono text-xs">
-                  {JSON.stringify(notification.metadata, null, 2)}
-                </pre>
-              </div>
-            )}
-
-            {/* Timestamp */}
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-              <span>
-                {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-              </span>
-              <span>
-                {format(new Date(notification.created_at), 'MMM d, yyyy h:mm a')}
-              </span>
-            </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}</span>
+            <span>{format(new Date(notification.created_at), 'MMM d, yyyy h:mm a')}</span>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+}
+
+export function NotificationCenter() {
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+
+  const [searchQuery,    setSearchQuery]    = useState('');
+  const [filterType,     setFilterType]     = useState<string>('all');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+
+  const filteredNotifications = notifications.filter(n => {
+    const matchesSearch = n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          n.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType   = filterType === 'all' || n.type === filterType;
+    const matchesRead   = !showUnreadOnly || !n.is_read;
+    return matchesSearch && matchesType && matchesRead;
+  });
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Bell className="w-6 h-6 text-gray-900 dark:text-gray-100 mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Notification Center
-            </h1>
-            {unreadCount > 0 && (
-              <span className="ml-3 bg-blue-500 text-white text-sm px-2 py-1 rounded-full">
-                {unreadCount} unread
-              </span>
-            )}
-          </div>
-
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              <CheckCheck className="w-4 h-4 mr-2" />
-              Mark all read
-            </button>
-          )}
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+    <div className="space-y-6">
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+            <Input
+              type="search"
               placeholder="Search notifications..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9"
+              aria-label="Search notifications"
             />
           </div>
 
           {/* Type Filter */}
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            onChange={e => setFilterType(e.target.value)}
+            aria-label="Filter by type"
+            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="all">All Types</option>
             <option value="attendance">Attendance</option>
@@ -195,50 +152,60 @@ export function NotificationCenter() {
             <option value="admin_message">Admin Messages</option>
           </select>
 
-          {/* Unread Filter */}
+          {/* Unread Toggle */}
           <button
             onClick={() => setShowUnreadOnly(!showUnreadOnly)}
-            className={`flex items-center px-4 py-2 rounded-lg border transition-colors ${
+            aria-pressed={showUnreadOnly}
+            className={cn(
+              'flex items-center gap-2 h-9 px-4 rounded-md border text-sm font-medium transition-colors',
               showUnreadOnly
-                ? 'bg-blue-500 text-white border-blue-500'
-                : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border text-foreground hover:bg-muted',
+            )}
           >
-            {showUnreadOnly ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+            {showUnreadOnly ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {showUnreadOnly ? 'Show All' : 'Unread Only'}
           </button>
+        </div>
+
+        {/* Mark all read */}
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && (
+            <>
+              <Badge variant="destructive">{unreadCount} unread</Badge>
+              <Button size="sm" variant="default" onClick={markAllAsRead} className="gap-1.5">
+                <CheckCheck className="w-4 h-4" />
+                Mark all read
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Content */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400">Loading notifications...</p>
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="loading-spinner w-8 h-8" />
+          <p className="text-sm text-muted-foreground">Loading notifications&hellip;</p>
         </div>
       ) : filteredNotifications.length === 0 ? (
-        <div className="text-center py-12">
-          <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-            {searchQuery || filterType !== 'all' || showUnreadOnly 
-              ? 'No matching notifications' 
-              : 'No notifications yet'
-            }
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Bell className="w-16 h-16 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            {searchQuery || filterType !== 'all' || showUnreadOnly
+              ? 'No matching notifications'
+              : 'No notifications yet'}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            {searchQuery || filterType !== 'all' || showUnreadOnly 
+          <p className="text-sm text-muted-foreground">
+            {searchQuery || filterType !== 'all' || showUnreadOnly
               ? 'Try adjusting your filters or search terms'
-              : "You'll see new notifications here when they arrive"
-            }
+              : "You'll see new notifications here when they arrive"}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredNotifications.map((notification) => (
-            <NotificationCard
-              key={notification.id}
-              notification={notification}
-            />
+          {filteredNotifications.map(n => (
+            <NotificationCard key={n.id} notification={n} onMarkAsRead={markAsRead} />
           ))}
         </div>
       )}
