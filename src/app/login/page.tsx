@@ -3,7 +3,6 @@
 import { useState, useId, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { isDemoMode } from '@/lib/supabase';
 import {
   BookOpen, Eye, EyeOff, Mail, Lock,
   Users, Briefcase, AlertCircle, ArrowRight, ShieldOff
@@ -52,7 +51,7 @@ function Field({
           style={{
             width:'100%', boxSizing:'border-box',
             paddingLeft:38, paddingRight: right ? 42 : 12,
-            height:44, borderRadius:10, fontSize:14,
+            height:48, borderRadius:10, fontSize:14,
             color:'#fff', background:'rgba(255,255,255,.07)',
             border: error ? '1px solid rgba(239,68,68,.5)' : '1px solid rgba(255,255,255,.1)',
             outline:'none', transition:'border-color .15s, box-shadow .15s',
@@ -106,8 +105,6 @@ function LoginPageInner() {
     if (!password) { setError('Please enter your password'); return; }
     setLoading(true); setError('');
     try {
-      if (isDemoMode) { setError('Live login unavailable in demo mode.'); return; }
-
       const supabase = createClient();
       const { data, error: authErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (authErr) { setError(authErr.message); return; }
@@ -144,7 +141,6 @@ function LoginPageInner() {
   };
 
   const handleGoogle = async () => {
-    if (isDemoMode) { setError('Google sign-in unavailable in demo mode.'); return; }
     setLoading(true);
     try {
       const supabase = createClient();
@@ -183,7 +179,7 @@ function LoginPageInner() {
           border:'1px solid rgba(255,255,255,.09)',
           boxShadow:'0 32px 64px rgba(0,0,0,.55)',
         }}>
-          <div style={{ padding:'28px 28px 24px' }}>
+          <div style={{ padding:'28px 24px 24px' }}>
 
             {/* header */}
             <div style={{ textAlign:'center', marginBottom:20 }}>
@@ -245,7 +241,7 @@ function LoginPageInner() {
                 placeholder="••••••" autoComplete="current-password"
                 icon={Lock}
                 right={
-                  <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw?'Hide':'Show'}
+                  <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw?'Hide password':'Show password'}
                     style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:3, color:'rgba(255,255,255,.28)' }}
                   >
                     {showPw ? <EyeOff style={{width:15,height:15}}/> : <Eye style={{width:15,height:15}}/>}
@@ -262,7 +258,7 @@ function LoginPageInner() {
               <button type="submit" disabled={loading} className="lp-btn-shine"
                 style={{
                   position:'relative', overflow:'hidden',
-                  width:'100%', height:44, borderRadius:10,
+                  width:'100%', height:48, borderRadius:10,
                   fontWeight:700, fontSize:13, color:'#fff', border:'none',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   background: loading ? 'rgba(37,99,235,.6)' : 'linear-gradient(135deg,#2563eb 0%,#1a4fcc 100%)',
@@ -295,7 +291,7 @@ function LoginPageInner() {
             {/* google */}
             <button type="button" onClick={handleGoogle} disabled={loading}
               style={{
-                width:'100%', height:44,
+                width:'100%', height:48,
                 display:'flex', alignItems:'center', justifyContent:'center', gap:10,
                 borderRadius:10, fontSize:13, fontWeight:600,
                 color:'rgba(255,255,255,.8)', cursor: loading?'not-allowed':'pointer',
@@ -341,7 +337,7 @@ export default function LoginPage() {
         minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center',
         background:'#060f1c',
       }}>
-        <svg style={{width:28,height:28}} className="lp-spin" fill="none" viewBox="0 0 24 24">
+        <svg style={{width:28,height:28,animation:'spin .7s linear infinite'}} fill="none" viewBox="0 0 24 24">
           <circle style={{opacity:.2}} cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="3"/>
           <path style={{opacity:.8}} fill="#3b82f6" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
         </svg>
