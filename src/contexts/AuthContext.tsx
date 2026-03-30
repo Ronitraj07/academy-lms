@@ -22,25 +22,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (isDemoMode) {
-      // Read the actual logged-in demo user from localStorage
       try {
         const stored = localStorage.getItem('demo_user');
         if (stored) {
           const demoUser = JSON.parse(stored);
+          // #22 — use the stored id, not a hardcoded fallback string
+          const resolvedId = demoUser.id || 'demo-user-id';
           setProfile({
-            id: demoUser.id || 'demo-profile-id',
-            user_id: demoUser.id || 'demo-user-id',
-            full_name: demoUser.email?.split('@')[0] || 'Demo User',
+            id: resolvedId,
+            user_id: resolvedId,
+            full_name: demoUser.full_name || demoUser.email?.split('@')[0] || 'Demo User',
             role: demoUser.role || 'student',
           });
           return;
         }
       } catch {
-        // fallback
+        // fall through to default below
       }
-      // Fallback if nothing stored
+      // Fallback only when nothing is stored at all
       setProfile({
-        id: 'demo-profile-id',
+        id: 'demo-user-id',
         user_id: 'demo-user-id',
         full_name: 'Demo User',
         role: 'student',
@@ -73,7 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isDemoMode) {
-      // Read stored demo user to restore session
       try {
         const stored = localStorage.getItem('demo_user');
         if (stored) {
@@ -92,13 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: { user: User } | null } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event: string, session: { user: User } | null) => {
@@ -112,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user) {
       refreshProfile();
-    } else {
+    } else if (!isDemoMode) {
       setProfile(null);
     }
   }, [user, refreshProfile]);
