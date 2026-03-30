@@ -2,7 +2,8 @@
 
 import { useState, useId, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase, isDemoMode } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+import { isDemoMode } from '@/lib/supabase';
 import {
   BookOpen, Eye, EyeOff, Mail, Lock,
   Users, Briefcase, AlertCircle, ChevronDown,
@@ -18,7 +19,6 @@ const DEMO_CREDS = [
   { role: 'Admin'   as const, tag: 'staff'   as UIRole, email: 'admin@academy.test',   password: 'admin123!',   dot: '#f87171' },
 ];
 
-// ─── tiny style block injected once ─────────────────────────────────────────
 const STYLES = `
   @keyframes fadeUp {
     from { opacity:0; transform:translateY(18px); }
@@ -88,7 +88,6 @@ function Field({
   );
 }
 
-// ─── inner component (uses useSearchParams) ───────────────────────────────────
 function LoginPageInner() {
   const uid          = useId();
   const router       = useRouter();
@@ -133,7 +132,6 @@ function LoginPageInner() {
     setLoading(true); setError('');
 
     try {
-      /* demo mode */
       if (isDemoMode) {
         const m = DEMO_CREDS.find(
           c => c.email.toLowerCase() === email.trim().toLowerCase() && c.password === password
@@ -148,14 +146,14 @@ function LoginPageInner() {
         return;
       }
 
-      /* real supabase */
+      // Use SSR browser client so PKCE verifier is stored in cookies
+      const supabase = createClient();
       const { data, error: authErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (authErr) { setError(authErr.message); return; }
 
       if (data.user) {
         const userEmail = (data.user.email || '').toLowerCase().trim();
 
-        // whitelist check
         const { data: allowed, error: wlErr } = await supabase
           .from('allowed_users').select('role, is_active').eq('email', userEmail).maybeSingle();
 
@@ -167,13 +165,11 @@ function LoginPageInner() {
           return;
         }
 
-        // upsert profile
         await supabase.from('profiles').upsert(
           { user_id: data.user.id, email: userEmail, role: allowed.role },
           { onConflict: 'user_id' }
         );
 
-        // ✅ redirect to correct dashboard
         goToDashboard((allowed.role as ActualRole) || 'student');
       }
     } catch (err) {
@@ -188,6 +184,9 @@ function LoginPageInner() {
     if (isDemoMode) { setError('Google sign-in is not available in demo mode.'); return; }
     setLoading(true);
     try {
+      // CRITICAL: must use createBrowserClient (SSR) so PKCE code_verifier is
+      // stored in a cookie and survives the Google redirect back to /auth/callback
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -454,7 +453,6 @@ function LoginPageInner() {
   );
 }
 
-// ─── default export: Suspense wrapper (required for useSearchParams) ──────────
 export default function LoginPage() {
   return (
     <Suspense fallback={
