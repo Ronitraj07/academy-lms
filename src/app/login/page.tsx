@@ -280,7 +280,8 @@ function LoginPageInner() {
         }
 
         // ── 3. Upsert profile
-        await supabase.from('profiles' as any).upsert(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('profiles') as any).upsert(
           { user_id: data.user.id, email: userEmail, role: actualRole },
           { onConflict: 'user_id' }
         );
