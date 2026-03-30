@@ -3,24 +3,41 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * OAuth callback — whitelist-gated.
+ * OAuth callback — whitelist-gated + tab-role mismatch guard.
  *
  * Flow:
  * 1. Exchange OAuth code for session
  * 2. Look up email in `allowed_users` table
- * 3. If NOT found  → destroy session, redirect /login?error=not_allowed
- * 4. If found      → upsert profile with role from allowed_users, redirect dashboard
+ * 3. NOT found / deactivated  → destroy session, redirect /login?error=not_allowed
+ * 4. Tab mismatch              → destroy session, redirect /login?error=wrong_tab
+ * 5. All good                 → upsert profile with DB role, redirect dashboard
+ *
+ * NOTE: All cookie writes are applied to `response` BEFORE we ever reassign it,
+ * so the session is always correctly persisted on the final redirect response.
  */
+
+type ActualRole = 'student' | 'faculty' | 'admin';
+type UITab      = 'student' | 'staff';
+
+function tabMatchesRole(tab: UITab, role: ActualRole): boolean {
+  return tab === 'student' ? role === 'student' : (role === 'faculty' || role === 'admin');
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  // The login page passes ?tab=student|staff so we can enforce the same guard here
+  const tab  = (searchParams.get('tab') || 'student') as UITab;
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  // We need a mutable response so cookie helpers can write to it
-  let response = NextResponse.redirect(`${origin}/login`);
+  // ─────────────────────────────────────────────────────────────────────
+  // Use a single shared response object so all Set-Cookie headers land
+  // on the exact response object the browser sees, not a discarded draft.
+  // ─────────────────────────────────────────────────────────────────────
+  const response = { current: NextResponse.redirect(`${origin}/login`) };
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,21 +48,24 @@ export async function GET(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({ name, value, ...options });
+          // Write to the CURRENT response, not a captured snapshot
+          response.current.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          response.cookies.set({ name, value: '', ...options });
+          response.current.cookies.set({ name, value: '', ...options });
         },
       },
     }
   );
 
-  // 1. Exchange code → session
+  // 1. Exchange code → session (this writes auth cookies via the set() handler above)
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !data.user) {
     console.error('[auth/callback] exchange error:', error?.message);
-    return NextResponse.redirect(`${origin}/login?error=oauth_failed`);
+    // Redirect, preserving any cookies already written
+    response.current = NextResponse.redirect(`${origin}/login?error=oauth_failed`);
+    return response.current;
   }
 
   const user  = data.user;
@@ -65,13 +85,23 @@ export async function GET(request: NextRequest) {
   // 3. Not whitelisted or deactivated → destroy session & bounce
   if (!allowed || !allowed.is_active) {
     await supabase.auth.signOut();
-    response = NextResponse.redirect(`${origin}/login?error=not_allowed`);
-    return response;
+    const r = NextResponse.redirect(`${origin}/login?error=not_allowed`);
+    // Copy any cookies from the exchange step
+    response.current.cookies.getAll().forEach(c => r.cookies.set(c));
+    return r;
   }
 
-  // 4. Whitelisted → upsert profile with role from DB
-  const role: 'admin' | 'faculty' | 'student' = allowed.role || 'student';
+  const role: ActualRole = (allowed.role as ActualRole) || 'student';
 
+  // 4. Tab mismatch → destroy session & bounce
+  if (!tabMatchesRole(tab, role)) {
+    await supabase.auth.signOut();
+    const r = NextResponse.redirect(`${origin}/login?error=wrong_tab`);
+    response.current.cookies.getAll().forEach(c => r.cookies.set(c));
+    return r;
+  }
+
+  // 5. Whitelisted + tab matches → upsert profile
   await supabase.from('profiles').upsert(
     {
       user_id:    user.id,
@@ -83,8 +113,9 @@ export async function GET(request: NextRequest) {
     { onConflict: 'user_id' }
   );
 
-  // 5. Redirect to correct dashboard
+  // 6. Redirect to correct dashboard, preserving session cookies
   const dest = role === 'admin' ? '/admin' : role === 'faculty' ? '/faculty' : '/student';
-  response = NextResponse.redirect(`${origin}${dest}`);
-  return response;
+  const finalRedirect = NextResponse.redirect(`${origin}${dest}`);
+  response.current.cookies.getAll().forEach(c => finalRedirect.cookies.set(c));
+  return finalRedirect;
 }
