@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Sidebar } from '@/components/sidebar'
 import { MobileNav } from '@/components/mobile-nav'
 import { TopNavbar } from '@/components/top-navbar'
@@ -13,7 +13,9 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, className }: DashboardLayoutProps) {
-  const { user, loading } = useAuth()
+  const { loading } = useAuth()
+  // 1.1 — single source of truth for sidebar open state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   if (loading) {
     return (
@@ -28,23 +30,38 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Desktop Layout */}
+      {/* 1.2 — flex wrapper: sidebar visible lg+ only; below lg handled by MobileNav */}
       <div className="flex h-screen overflow-hidden">
-        {/* Desktop Sidebar */}
-        <Sidebar className="hidden md:flex" />
-        
+        {/*
+          1.1 + 1.2 — Sidebar:
+          - Desktop (lg+): always rendered, collapsible
+          - Mobile/Tablet (<lg): rendered as fixed overlay drawer, toggled via isSidebarOpen
+          className on the outer wrapper is no longer used for visibility;
+          the Sidebar itself handles hidden/shown state via isOpen prop.
+        */}
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Top Navigation */}
-          <TopNavbar />
-          
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* 1.1 — TopNavbar receives the toggle handler */}
+          <TopNavbar
+            onMenuClick={() => setIsSidebarOpen(prev => !prev)}
+            isSidebarOpen={isSidebarOpen}
+          />
+
           {/* Content */}
-          <main className={cn(
-            'flex-1 overflow-auto bg-gradient-to-br from-background to-muted/30',
-            'scrollbar-modern p-4 md:p-6 lg:p-8',
-            'pb-20 md:pb-6', // Extra bottom padding for mobile nav
-            className
-          )}>
+          <main
+            className={cn(
+              'flex-1 overflow-auto bg-gradient-to-br from-background to-muted/30',
+              'scrollbar-modern p-4 md:p-6 lg:p-8',
+              // 1.2 — bottom padding: mobile nav visible only <lg, use safe-area too
+              'pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-8',
+              className
+            )}
+          >
             <div className="container-responsive max-w-7xl">
               {children}
             </div>
@@ -52,7 +69,7 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation — only renders visible UI below lg */}
       <MobileNav />
     </div>
   )
