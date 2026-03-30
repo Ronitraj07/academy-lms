@@ -19,6 +19,16 @@ export interface Profile {
   role?: 'student' | 'faculty' | 'admin';
 }
 
+export interface AllowedUser {
+  id: string;
+  email: string;
+  role: 'student' | 'faculty' | 'admin';
+  is_active: boolean;
+  added_by?: string;
+  note?: string;
+  created_at?: string;
+}
+
 export interface Student {
   id: string;
   user_id: string;
@@ -81,7 +91,7 @@ export interface Attendance {
 export interface Timetable {
   id: string;
   subject_id: string;
-  day_of_week: number; // 0 = Sunday, 1 = Monday, etc.
+  day_of_week: number;
   start_time: string;
   end_time: string;
   room?: string;
@@ -143,7 +153,6 @@ export interface DashboardStats {
   averageAttendance: number;
 }
 
-// Attendance Summary
 export interface AttendanceSummary {
   subject_id: string;
   subject_name: string;
@@ -152,21 +161,18 @@ export interface AttendanceSummary {
   attendance_percentage: number;
 }
 
-// Chart Data
 export interface ChartData {
   name: string;
   value: number;
   label?: string;
 }
 
-// API Response types
 export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
 }
 
-// Form types
 export interface LoginForm {
   email: string;
   password: string;
@@ -181,11 +187,9 @@ export interface CreateUserForm {
   phone?: string;
   address?: string;
   date_of_birth?: string;
-  // Student specific
   student_id?: string;
   class_level?: string;
   guardian_contact?: string;
-  // Faculty specific
   employee_id?: string;
   department?: string;
   hire_date?: string;
@@ -199,7 +203,6 @@ export interface UpdateUserForm {
   address?: string;
   date_of_birth?: string;
   status?: 'active' | 'inactive';
-  // Role-specific updates
   department?: string;
   specialization?: string;
   class_level?: string;
@@ -231,7 +234,6 @@ export interface UserActivity {
   details?: Record<string, any>;
 }
 
-// Subject Management Types
 export interface CreateSubjectForm {
   name: string;
   code: string;
@@ -271,7 +273,6 @@ export interface SubjectWithStats extends Subject {
   faculty?: Faculty;
 }
 
-// Attendance Management Types
 export interface AttendanceRecord {
   id: string;
   student_id: string;
@@ -327,10 +328,15 @@ export interface StudentAttendanceSummary {
   student?: Student;
 }
 
-// Supabase types
+// Supabase Database types
 export interface Database {
   public: {
     Tables: {
+      allowed_users: {
+        Row: AllowedUser;
+        Insert: Omit<AllowedUser, 'id' | 'created_at'>;
+        Update: Partial<Omit<AllowedUser, 'id'>>;
+      };
       profiles: {
         Row: Profile;
         Insert: Omit<Profile, 'id'>;
