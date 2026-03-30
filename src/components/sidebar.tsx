@@ -56,18 +56,22 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
   const { user, profile, signOut } = useAuth()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  // 1.2 — auto-collapse on window resize (desktop only)
+  // Auto-collapse only in the 1024–1279px gap zone (between lg and xl).
+  // Below 1024px the mobile nav handles navigation — sidebar is hidden via
+  // CSS translate, not collapsed. Above 1280px always expand fully.
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1280) setIsCollapsed(true)
-      else setIsCollapsed(false)
+      const w = window.innerWidth
+      if (w >= 1024 && w < 1280) setIsCollapsed(true)
+      else if (w >= 1280)        setIsCollapsed(false)
+      // < 1024: leave collapsed state unchanged; mobile nav is in control
     }
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // 1.2 — close mobile drawer when route changes
+  // Close mobile drawer when route changes
   useEffect(() => {
     onClose?.()
   }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -110,13 +114,13 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
     href: item.href === '/dashboard' ? getDashboardHref() : item.href,
   }))
 
-  // 1.7 — no early return on !mounted; we always render the sidebar so layout
-  // is stable. Visibility for mobile is controlled via translate/opacity only.
+  // No early return on !mounted — always render so layout is stable.
+  // Mobile visibility controlled via CSS translate/opacity only.
   const isMobileVisible = isOpen
 
   return (
     <>
-      {/* 1.1 — Mobile overlay backdrop; only below lg */}
+      {/* Mobile overlay backdrop; only below lg */}
       <div
         aria-hidden="true"
         onClick={onClose}
@@ -127,10 +131,10 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
       />
 
       {/*
-        1.2 + 1.7 — Sidebar element:
+        Sidebar element:
         - lg+: static in flex flow, always visible, collapsible
         - <lg: fixed overlay, translated off-screen when closed, slides in when isOpen
-        No `returns null` — element always in DOM so layout never shifts.
+        No `return null` — element always in DOM so layout never shifts.
       */}
       <div
         id="sidebar-nav"
@@ -194,7 +198,6 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
             </Avatar>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                {/* 1.8 bonus — show full_name not just email */}
                 <p className="font-medium text-sm truncate">
                   {profile?.full_name || user?.email?.split('@')[0] || 'User'}
                 </p>
