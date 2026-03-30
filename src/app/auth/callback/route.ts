@@ -3,35 +3,24 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * OAuth callback handler.
- * After Google redirects back here, we:
- * 1. Exchange the code for a session
- * 2. Look up the user's role in the profiles table
- * 3. Redirect to the correct dashboard
- * 4. If no profile exists yet (first Google sign-in), create one with
- *    the role derived from ADMIN_EMAILS / FACULTY_EMAILS env vars
+ * OAuth callback — whitelist-gated.
+ *
+ * Flow:
+ * 1. Exchange OAuth code for session
+ * 2. Look up email in `allowed_users` table
+ * 3. If NOT found  → destroy session, redirect /login?error=not_allowed
+ * 4. If found      → upsert profile with role from allowed_users, redirect dashboard
  */
-
-const ADMIN_EMAILS   = (process.env.ADMIN_EMAILS   || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
-const FACULTY_EMAILS = (process.env.FACULTY_EMAILS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
-
-function getRoleFromEmail(email: string): 'admin' | 'faculty' | 'student' {
-  const e = email.toLowerCase();
-  if (ADMIN_EMAILS.includes(e))   return 'admin';
-  if (FACULTY_EMAILS.includes(e)) return 'faculty';
-  return 'student';
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
-  const code  = searchParams.get('code');
-  const next  = searchParams.get('next') ?? '/';
+  const code = searchParams.get('code');
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  let response = NextResponse.redirect(`${origin}/student`);
+  // We need a mutable response so cookie helpers can write to it
+  let response = NextResponse.redirect(`${origin}/login`);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,42 +40,51 @@ export async function GET(request: NextRequest) {
     }
   );
 
+  // 1. Exchange code → session
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !data.user) {
-    console.error('OAuth callback error:', error);
+    console.error('[auth/callback] exchange error:', error?.message);
     return NextResponse.redirect(`${origin}/login?error=oauth_failed`);
   }
 
-  const user = data.user;
-  const email = user.email || '';
+  const user  = data.user;
+  const email = (user.email || '').toLowerCase().trim();
 
-  // Check if profile exists
-  const { data: existing } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('user_id', user.id)
+  // 2. Check whitelist
+  const { data: allowed, error: wlErr } = await supabase
+    .from('allowed_users')
+    .select('role, is_active')
+    .eq('email', email)
     .maybeSingle();
 
-  let role: 'admin' | 'faculty' | 'student';
+  if (wlErr) {
+    console.error('[auth/callback] whitelist lookup error:', wlErr.message);
+  }
 
-  if (existing?.role) {
-    role = existing.role;
-  } else {
-    // First sign-in: derive role from email, create profile
-    role = getRoleFromEmail(email);
-    await supabase.from('profiles').upsert({
+  // 3. Not whitelisted or deactivated → destroy session & bounce
+  if (!allowed || !allowed.is_active) {
+    await supabase.auth.signOut();
+    response = NextResponse.redirect(`${origin}/login?error=not_allowed`);
+    return response;
+  }
+
+  // 4. Whitelisted → upsert profile with role from DB
+  const role: 'admin' | 'faculty' | 'student' = allowed.role || 'student';
+
+  await supabase.from('profiles').upsert(
+    {
       user_id:    user.id,
-      email:      email,
+      email,
       full_name:  user.user_metadata?.full_name || user.user_metadata?.name || '',
       avatar_url: user.user_metadata?.avatar_url || '',
       role,
-    });
-  }
+    },
+    { onConflict: 'user_id' }
+  );
 
+  // 5. Redirect to correct dashboard
   const dest = role === 'admin' ? '/admin' : role === 'faculty' ? '/faculty' : '/student';
-
   response = NextResponse.redirect(`${origin}${dest}`);
-
   return response;
 }

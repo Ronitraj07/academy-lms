@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useId } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useId, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import {
   BookOpen, Eye, EyeOff, Mail, Lock,
   Users, Briefcase, AlertCircle, ChevronDown,
-  Zap, CheckCircle2, ArrowRight
+  Zap, CheckCircle2, ArrowRight, ShieldOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,8 +20,9 @@ const DEMO_CREDS = [
 ] as const;
 
 export default function LoginPage() {
-  const uid = useId();
-  const router = useRouter();
+  const uid          = useId();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
 
   const [role,     setRole]     = useState<UIRole>('student');
   const [email,    setEmail]    = useState('');
@@ -32,6 +33,18 @@ export default function LoginPage() {
   const [emailErr, setEmailErr] = useState('');
   const [showDemo, setShowDemo] = useState(false);
   const [fillAnim, setFillAnim] = useState<string | null>(null);
+
+  // Handle error codes from OAuth callback redirect
+  useEffect(() => {
+    const e = searchParams.get('error');
+    if (e === 'not_allowed') {
+      setError('Access denied. Your account has not been approved by an administrator.');
+    } else if (e === 'oauth_failed') {
+      setError('Google sign-in failed. Please try again.');
+    } else if (e === 'missing_code') {
+      setError('OAuth flow interrupted. Please try again.');
+    }
+  }, [searchParams]);
 
   const validateEmail = (v: string) => {
     if (!v)                                        { setEmailErr('Email is required'); return false; }
@@ -58,6 +71,7 @@ export default function LoginPage() {
     setLoading(true); setError('');
 
     try {
+      /* ── DEMO MODE ── */
       if (isDemoMode) {
         const match = DEMO_CREDS.find(
           c => c.email.toLowerCase() === email.trim().toLowerCase() && c.password === password
@@ -78,14 +92,36 @@ export default function LoginPage() {
         return;
       }
 
+      /* ── REAL SUPABASE ── */
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
         email: email.trim(), password,
       });
       if (authErr) { setError(authErr.message); return; }
+
       if (data.user) {
-        const { data: profile } = await supabase
-          .from('profiles').select('role').eq('user_id', data.user.id).single();
-        redirect(profile?.role || 'student');
+        const userEmail = (data.user.email || '').toLowerCase().trim();
+
+        // Whitelist check
+        const { data: allowed } = await supabase
+          .from('allowed_users')
+          .select('role, is_active')
+          .eq('email', userEmail)
+          .maybeSingle();
+
+        if (!allowed || !allowed.is_active) {
+          // Not whitelisted — sign out immediately
+          await supabase.auth.signOut();
+          setError('Access denied. Your account has not been approved by an administrator.');
+          return;
+        }
+
+        // Upsert profile with role from whitelist
+        await supabase.from('profiles').upsert(
+          { user_id: data.user.id, email: userEmail, role: allowed.role },
+          { onConflict: 'user_id' }
+        );
+
+        redirect(allowed.role || 'student');
       }
     } catch { setError('An unexpected error occurred. Please try again.'); }
     finally   { setLoading(false); }
@@ -107,27 +143,17 @@ export default function LoginPage() {
   const roleLabel = role === 'student' ? 'Student' : 'Staff';
 
   return (
-    /*
-     * Full-screen deep navy background with a soft radial blue glow in the
-     * centre — matching the reference design.
-     */
     <div
       className="min-h-screen flex items-center justify-center px-4 py-10"
       style={{
         background: 'radial-gradient(ellipse 80% 60% at 50% 40%, #0d2a4a 0%, #07111f 55%, #040d18 100%)',
       }}
     >
-      {/* glow orb behind the card */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 flex items-center justify-center"
-      >
+      {/* glow orb */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 flex items-center justify-center">
         <div
           className="w-[520px] h-[520px] rounded-full opacity-20"
-          style={{
-            background: 'radial-gradient(circle, #1e6fff 0%, transparent 70%)',
-            filter: 'blur(60px)',
-          }}
+          style={{ background: 'radial-gradient(circle, #1e6fff 0%, transparent 70%)', filter: 'blur(60px)' }}
         />
       </div>
 
@@ -152,14 +178,10 @@ export default function LoginPage() {
             <p className="text-white/45 text-sm">Access your dashboard</p>
           </div>
 
-          {/* divider */}
           <div className="h-px bg-white/8 mb-6" />
 
           {/* role tabs */}
-          <div
-            className="flex p-1 mb-6 rounded-lg"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
-          >
+          <div className="flex p-1 mb-6 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
             {(['student','staff'] as const).map(r => (
               <button
                 key={r}
@@ -168,9 +190,7 @@ export default function LoginPage() {
                 aria-pressed={role === r}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 min-h-[40px] rounded-md text-sm font-semibold transition-all duration-200',
-                  role === r
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-white/45 hover:text-white/70'
+                  role === r ? 'bg-blue-600 text-white shadow-md' : 'text-white/45 hover:text-white/70'
                 )}
               >
                 {r === 'student' ? <Users className="h-3.5 w-3.5" /> : <Briefcase className="h-3.5 w-3.5" />}
@@ -185,20 +205,25 @@ export default function LoginPage() {
               role="alert" aria-live="assertive"
               className="mb-5 flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-sm animate-scale-in"
               style={{
-                background: 'rgba(239,68,68,0.12)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                color: '#fca5a5',
+                background: error.includes('Access denied')
+                  ? 'rgba(251,191,36,0.10)'
+                  : 'rgba(239,68,68,0.12)',
+                border: error.includes('Access denied')
+                  ? '1px solid rgba(251,191,36,0.25)'
+                  : '1px solid rgba(239,68,68,0.25)',
+                color: error.includes('Access denied') ? '#fde68a' : '#fca5a5',
               }}
             >
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
+              {error.includes('Access denied')
+                ? <ShieldOff className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+                : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
+              }
               <span>{error}</span>
             </div>
           )}
 
           {/* form */}
           <form onSubmit={handleLogin} className="space-y-4" noValidate>
-
-            {/* email */}
             <div>
               <label htmlFor={`${uid}-em`} className="block text-sm font-medium text-white/60 mb-1.5">Email</label>
               <div className="relative group">
@@ -213,11 +238,8 @@ export default function LoginPage() {
                   required
                   className={cn(
                     'w-full pl-10 pr-4 h-12 text-base rounded-xl text-white placeholder-white/25',
-                    'transition-all duration-150 focus:outline-none',
-                    'focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60',
-                    emailErr
-                      ? 'border border-red-500/50'
-                      : 'border border-white/10 hover:border-white/20'
+                    'transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60',
+                    emailErr ? 'border border-red-500/50' : 'border border-white/10 hover:border-white/20'
                   )}
                   style={{ background: 'rgba(255,255,255,0.06)' }}
                 />
@@ -229,7 +251,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* password */}
             <div>
               <label htmlFor={`${uid}-pw`} className="block text-sm font-medium text-white/60 mb-1.5">Password</label>
               <div className="relative group">
@@ -261,7 +282,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* submit */}
             <button
               type="submit"
               disabled={loading}
@@ -272,7 +292,6 @@ export default function LoginPage() {
                 boxShadow: '0 4px 20px rgba(37,99,235,0.45)',
               }}
             >
-              {/* shimmer */}
               <span
                 aria-hidden
                 className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500"
@@ -290,21 +309,19 @@ export default function LoginPage() {
                 ) : (
                   <>
                     Login as {roleLabel}
-                    <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" />
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </>
                 )}
               </span>
             </button>
           </form>
 
-          {/* divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-white/8" />
             <span className="text-xs text-white/30">or</span>
             <div className="flex-1 h-px bg-white/8" />
           </div>
 
-          {/* google */}
           <button
             type="button"
             onClick={handleGoogle}
@@ -371,12 +388,11 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* footer */}
           <p className="text-center text-sm text-white/30 mt-6">
-            Not registered?{' '}
-            <button type="button" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-              Create an account
-            </button>
+            Need access?{' '}
+            <a href="mailto:academyhub01@gmail.com" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+              Contact your administrator
+            </a>
           </p>
         </div>
       </div>
