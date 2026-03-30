@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -40,15 +40,17 @@ export function useAttendance() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  // #13 — stable client reference, never recreated on re-render
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
-  const fetchAttendance = async () => {
+  // #14 — useCallback so the realtime subscription always closes over the latest version
+  const fetchAttendance = useCallback(async () => {
     if (!profile?.id) return;
 
     try {
       setLoading(true);
-      
-      // Fetch attendance records for the student
+
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('attendance')
         .select(`
@@ -66,7 +68,6 @@ export function useAttendance() {
 
       setAttendance(attendanceData || []);
 
-      // Calculate statistics
       if (attendanceData && attendanceData.length > 0) {
         const subjectWise: AttendanceStats['subjectWise'] = {};
         let totalClasses = 0;
@@ -75,7 +76,7 @@ export function useAttendance() {
         attendanceData.forEach((record: any) => {
           const subjectId = record.subject_id;
           const subjectName = record.subjects?.name || 'Unknown Subject';
-          
+
           if (!subjectWise[subjectId]) {
             subjectWise[subjectId] = {
               subject: subjectName,
@@ -84,17 +85,16 @@ export function useAttendance() {
               percentage: 0
             };
           }
-          
+
           subjectWise[subjectId].total++;
           totalClasses++;
-          
+
           if (record.is_present) {
             subjectWise[subjectId].attended++;
             attendedClasses++;
           }
         });
 
-        // Calculate percentages
         Object.keys(subjectWise).forEach((subjectId) => {
           const subject = subjectWise[subjectId];
           subject.percentage = subject.total > 0 ? (subject.attended / subject.total) * 100 : 0;
@@ -121,13 +121,13 @@ export function useAttendance() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.id, supabase]);
 
   useEffect(() => {
     fetchAttendance();
-  }, [profile?.id]);
+  }, [fetchAttendance]);
 
-  // Set up real-time subscription for attendance updates
+  // Realtime subscription — fetchAttendance is now stable via useCallback
   useEffect(() => {
     if (!profile?.id) return;
 
@@ -142,7 +142,7 @@ export function useAttendance() {
           filter: `student_id=eq.${profile.id}`
         },
         () => {
-          fetchAttendance(); // Refresh attendance when changes occur
+          fetchAttendance();
         }
       )
       .subscribe();
@@ -150,7 +150,7 @@ export function useAttendance() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.id]);
+  }, [profile?.id, fetchAttendance, supabase]);
 
   return {
     attendance,

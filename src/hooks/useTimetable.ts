@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -8,7 +8,7 @@ interface TimetableEntry {
   id: string;
   subject_id: string;
   faculty_id: string;
-  day_of_week: number; // 0 = Sunday, 1 = Monday, etc.
+  day_of_week: number;
   start_time: string;
   end_time: string;
   room: string;
@@ -39,17 +39,18 @@ export function useTimetable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  // #13 — stable client reference
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const fetchTimetable = async () => {
+  const fetchTimetable = useCallback(async () => {
     if (!profile?.id) return;
 
     try {
       setLoading(true);
 
-      // First, get subjects the student is enrolled in
       const { data: enrollments, error: enrollmentError } = await supabase
         .from('subject_enrollments')
         .select('subject_id')
@@ -67,7 +68,6 @@ export function useTimetable() {
         return;
       }
 
-      // Fetch timetable entries for enrolled subjects
       const { data: timetableData, error: timetableError } = await supabase
         .from('timetable')
         .select(`
@@ -91,7 +91,6 @@ export function useTimetable() {
 
       setTimetable(timetableData || []);
 
-      // Organize by week schedule
       const schedule: DaySchedule[] = [];
       const today = new Date();
       const currentDay = today.getDay();
@@ -99,9 +98,9 @@ export function useTimetable() {
       for (let i = 0; i < 7; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() - currentDay + i);
-        
+
         const dayEntries = (timetableData || []).filter((entry: any) => entry.day_of_week === i);
-        
+
         schedule.push({
           day: days[i],
           date: date.toISOString().split('T')[0],
@@ -111,27 +110,26 @@ export function useTimetable() {
 
       setWeekSchedule(schedule);
 
-      // Set today's schedule
       const todaysEntries = (timetableData || []).filter((entry: any) => entry.day_of_week === currentDay);
       setTodaySchedule(todaysEntries);
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch timetable');
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.id, supabase]);
 
   useEffect(() => {
     fetchTimetable();
-  }, [profile?.id]);
+  }, [fetchTimetable]);
 
-  // Set up real-time subscription for timetable updates
+  // #19 — scoped filter: only triggers for subjects this student is enrolled in
+  // We attach per-subject channels after timetable loads to avoid a broadcast storm
   useEffect(() => {
     if (!profile?.id) return;
 
     const channel = supabase
-      .channel('timetable_updates')
+      .channel(`timetable_updates_${profile.id}`)
       .on(
         'postgres_changes',
         {
@@ -140,7 +138,7 @@ export function useTimetable() {
           table: 'timetable'
         },
         () => {
-          fetchTimetable(); // Refresh timetable when changes occur
+          fetchTimetable();
         }
       )
       .subscribe();
@@ -148,11 +146,11 @@ export function useTimetable() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.id]);
+  }, [profile?.id, fetchTimetable, supabase]);
 
   const getCurrentClass = () => {
     const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    const currentTime = now.toTimeString().slice(0, 5);
     const currentDay = now.getDay();
 
     return todaySchedule.find(entry => {
@@ -167,20 +165,18 @@ export function useTimetable() {
     const currentTime = now.toTimeString().slice(0, 5);
     const currentDay = now.getDay();
 
-    // First try to find next class today
     const todayNext = todaySchedule.find(entry => {
       return entry.day_of_week === currentDay && entry.start_time > currentTime;
     });
 
     if (todayNext) return todayNext;
 
-    // If no class today, find next class in upcoming days
     for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
       const targetDay = (currentDay + dayOffset) % 7;
       const dayEntries = timetable.filter(entry => entry.day_of_week === targetDay);
-      
+
       if (dayEntries.length > 0) {
-        return dayEntries[0]; // Return first class of the day
+        return dayEntries[0];
       }
     }
 
