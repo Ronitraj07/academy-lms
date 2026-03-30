@@ -3,19 +3,16 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
-  // Check if we're in demo mode
-  const isDemoMode = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') || 
-                     !process.env.NEXT_PUBLIC_SUPABASE_URL || 
-                     process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_url_here';
+  // Demo mode — allow everything without auth
+  const isDemoMode =
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') ||
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_url_here';
 
   if (isDemoMode) {
-    // In demo mode, allow all routes without authentication checks
-    console.log('🔧 Middleware: Demo mode active, allowing route:', request.nextUrl.pathname);
     return response;
   }
 
@@ -28,63 +25,37 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({ request: { headers: request.headers } });
+          response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
+          request.cookies.set({ name, value: '', ...options });
+          response = NextResponse.next({ request: { headers: request.headers } });
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     }
   );
 
-  // Refresh session if expired
-  await supabase.auth.getUser();
-
-  // Protect routes
+  // Single getUser() call — refreshes session AND returns the user
   const { data: { user } } = await supabase.auth.getUser();
-  const isAuthPage = request.nextUrl.pathname === '/login';
-  const isProtectedRoute = 
-    request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/admin') ||
-    request.nextUrl.pathname.startsWith('/faculty') ||
-    request.nextUrl.pathname.startsWith('/student');
 
-  // Redirect to login if not authenticated and accessing protected route
+  const { pathname } = request.nextUrl;
+  const isAuthPage = pathname === '/login';
+  const isProtectedRoute =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/faculty') ||
+    pathname.startsWith('/student');
+
+  // Not logged in → redirect to login
   if (!user && isProtectedRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Redirect authenticated users away from login page
+  // Logged-in user hitting /login → redirect to their dashboard
   if (user && isAuthPage) {
-    // Get user role and redirect to appropriate dashboard
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -92,10 +63,8 @@ export async function middleware(request: NextRequest) {
       .single();
 
     const role = profile?.role || 'student';
-    const dashboardUrl = role === 'admin' ? '/admin' : 
-                        role === 'faculty' ? '/faculty' : '/student';
-    
-    return NextResponse.redirect(new URL(dashboardUrl, request.url));
+    const dest = role === 'admin' ? '/admin' : role === 'faculty' ? '/faculty' : '/student';
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
   return response;
@@ -103,13 +72,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
