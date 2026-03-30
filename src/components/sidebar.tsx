@@ -16,7 +16,12 @@ import {
   ChevronRight,
   Settings,
   LogOut,
-  GraduationCap
+  GraduationCap,
+  UserCheck,
+  ClipboardList,
+  Send,
+  FileText,
+  User
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -34,14 +39,34 @@ interface NavItem {
 }
 
 const navigationItems: NavItem[] = [
-  { name: 'Dashboard',      href: '/dashboard',         icon: Home,          roles: ['student', 'faculty', 'admin'] },
-  { name: 'User Management',href: '/admin/users',        icon: Users,         roles: ['admin'] },
-  { name: 'Subjects',       href: '/admin/subjects',     icon: BookOpen,      roles: ['admin', 'faculty'] },
-  { name: 'Attendance',     href: '/admin/attendance',   icon: ClipboardCheck,roles: ['admin', 'faculty'] },
-  { name: 'Timetable',      href: '/timetable',          icon: Calendar,      roles: ['student', 'faculty', 'admin'] },
-  { name: 'Analytics',      href: '/analytics',          icon: BarChart3,     roles: ['admin'] },
-  { name: 'Remarks',        href: '/remarks',            icon: MessageSquare, roles: ['student', 'faculty', 'admin'] },
-  { name: 'Notifications',  href: '/notifications',      icon: Bell,          roles: ['student', 'faculty', 'admin'], badge: 3 },
+  // ── Shared ────────────────────────────────────────────────────────────────
+  { name: 'Dashboard',        href: '/dashboard',               icon: Home,          roles: ['student', 'faculty', 'admin'] },
+  { name: 'Notifications',    href: '/notifications',           icon: Bell,          roles: ['student', 'faculty', 'admin'], badge: 3 },
+
+  // ── Student ───────────────────────────────────────────────────────────────
+  { name: 'Attendance',       href: '/student/attendance',      icon: UserCheck,     roles: ['student'] },
+  { name: 'Timetable',        href: '/student/timetable',       icon: Calendar,      roles: ['student'] },
+  { name: 'Subjects',         href: '/student/subjects',        icon: BookOpen,      roles: ['student'] },
+  { name: 'Remarks',          href: '/student/remarks',         icon: MessageSquare, roles: ['student'] },
+
+  // ── Faculty ───────────────────────────────────────────────────────────────
+  { name: 'My Subjects',      href: '/faculty/subjects',        icon: BookOpen,      roles: ['faculty'] },
+  { name: 'Attendance',       href: '/faculty/attendance',      icon: ClipboardList, roles: ['faculty'] },
+  { name: 'Students',         href: '/faculty/students',        icon: Users,         roles: ['faculty'] },
+  { name: 'Timetable',        href: '/faculty/timetable',       icon: Calendar,      roles: ['faculty'] },
+  { name: 'Remarks',          href: '/faculty/remarks',         icon: MessageSquare, roles: ['faculty'] },
+  { name: 'Analytics',        href: '/faculty/analytics',       icon: BarChart3,     roles: ['faculty'] },
+  { name: 'Send Notification',href: '/notifications/send',      icon: Send,          roles: ['faculty', 'admin'] },
+
+  // ── Admin ─────────────────────────────────────────────────────────────────
+  { name: 'User Management',  href: '/admin/users',             icon: Users,         roles: ['admin'] },
+  { name: 'Students',         href: '/admin/students',          icon: GraduationCap, roles: ['admin'] },
+  { name: 'Faculty',          href: '/admin/faculty',           icon: User,          roles: ['admin'] },
+  { name: 'Subjects',         href: '/admin/subjects',          icon: BookOpen,      roles: ['admin'] },
+  { name: 'Enrollments',      href: '/admin/enrollments',       icon: ClipboardList, roles: ['admin'] },
+  { name: 'Attendance',       href: '/admin/attendance',        icon: ClipboardCheck,roles: ['admin'] },
+  { name: 'Analytics',        href: '/analytics',               icon: BarChart3,     roles: ['admin'] },
+  { name: 'Feedback',         href: '/admin/feedback',          icon: FileText,      roles: ['admin'] },
 ]
 
 interface SidebarProps {
@@ -56,25 +81,21 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
   const { user, profile, signOut } = useAuth()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  // Auto-collapse only in the 1024–1279px gap zone (between lg and xl).
-  // Below 1024px the mobile nav handles navigation — sidebar is hidden via
-  // CSS translate, not collapsed. Above 1280px always expand fully.
+  // Auto-collapse only in the 1024-1279px gap zone (between lg and xl).
+  // Below 1024px the mobile nav handles navigation.
+  // Above 1280px always expand fully.
   useEffect(() => {
     const handleResize = () => {
       const w = window.innerWidth
       if (w >= 1024 && w < 1280) setIsCollapsed(true)
       else if (w >= 1280)        setIsCollapsed(false)
-      // < 1024: leave collapsed state unchanged; mobile nav is in control
     }
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Close mobile drawer when route changes
-  useEffect(() => {
-    onClose?.()
-  }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { onClose?.() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const getDashboardHref = () => {
     switch (profile?.role) {
@@ -88,7 +109,7 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
     if (href === '/dashboard') {
       return ['/dashboard', '/', '/student', '/faculty', '/admin'].includes(pathname)
     }
-    return pathname.startsWith(href)
+    return pathname === href || pathname.startsWith(href + '/')
   }
 
   const getRoleBadgeColor = (role: string) => {
@@ -105,51 +126,36 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
     router.push('/login')
   }
 
-  const filteredNavItems = navigationItems.filter(item =>
-    item.roles.includes(profile?.role || 'student')
-  )
-
-  const resolvedItems = filteredNavItems.map(item => ({
-    ...item,
-    href: item.href === '/dashboard' ? getDashboardHref() : item.href,
-  }))
-
-  // No early return on !mounted — always render so layout is stable.
-  // Mobile visibility controlled via CSS translate/opacity only.
-  const isMobileVisible = isOpen
+  // Filter by role, then resolve /dashboard to role-specific href
+  const resolvedItems = navigationItems
+    .filter(item => item.roles.includes(profile?.role || 'student'))
+    .map(item => ({
+      ...item,
+      href: item.href === '/dashboard' ? getDashboardHref() : item.href,
+    }))
 
   return (
     <>
-      {/* Mobile overlay backdrop; only below lg */}
+      {/* Mobile overlay */}
       <div
         aria-hidden="true"
         onClick={onClose}
         className={cn(
           'fixed inset-0 bg-black/50 z-30 lg:hidden transition-opacity duration-300',
-          isMobileVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         )}
       />
 
-      {/*
-        Sidebar element:
-        - lg+: static in flex flow, always visible, collapsible
-        - <lg: fixed overlay, translated off-screen when closed, slides in when isOpen
-        No `return null` — element always in DOM so layout never shifts.
-      */}
       <div
         id="sidebar-nav"
         role="navigation"
         aria-label="Main navigation"
         className={cn(
-          // Base
           'flex flex-col h-screen bg-white dark:bg-gray-950 border-r border-border/50 transition-all duration-300 ease-in-out sidebar-blur z-40',
-          // Desktop (lg+): static, collapsible width
           'lg:relative lg:translate-x-0 lg:flex',
           isCollapsed ? 'lg:w-16' : 'lg:w-72',
-          // Mobile/Tablet (<lg): fixed overlay, translate controls visibility
           'fixed top-0 left-0 h-full w-72',
-          isMobileVisible ? 'translate-x-0' : '-translate-x-full',
-          // On lg+ override translate so desktop sidebar is always visible
+          isOpen ? 'translate-x-0' : '-translate-x-full',
           'lg:translate-x-0',
           className
         )}
@@ -174,8 +180,7 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
               </div>
             )}
             <Button
-              variant="ghost"
-              size="icon"
+              variant="ghost" size="icon"
               onClick={() => setIsCollapsed(c => !c)}
               className="h-8 w-8 hover:bg-muted hidden lg:flex shrink-0"
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -216,24 +221,32 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-modern">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto scrollbar-modern">
           {resolvedItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)
             return (
               <Link
-                key={item.name}
+                key={`${item.name}-${item.href}`}
                 href={item.href}
                 onClick={onClose}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative',
                   active
-                    ? 'bg-gradient-to-r from-primary/10 to-purple-600/10 text-primary border border-primary/20 shadow-sm'
+                    ? 'bg-primary/8 text-primary border border-primary/15'
                     : 'hover:bg-muted text-muted-foreground hover:text-foreground',
                   isCollapsed && 'justify-center px-0 w-11 h-11 mx-auto'
                 )}
               >
+                {/* Active left-border indicator */}
+                {active && !isCollapsed && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"
+                  />
+                )}
+
                 <div className="relative shrink-0">
                   <Icon className={cn(
                     'transition-colors duration-200',
@@ -256,7 +269,6 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
                   </>
                 )}
 
-                {/* Tooltip for collapsed desktop state */}
                 {isCollapsed && (
                   <div
                     role="tooltip"
@@ -275,7 +287,7 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
         <Separator className="mx-3 shrink-0" />
 
         {/* Footer */}
-        <div className="p-3 space-y-1 shrink-0">
+        <div className="p-3 space-y-0.5 shrink-0">
           <Link
             href="/settings"
             onClick={onClose}
