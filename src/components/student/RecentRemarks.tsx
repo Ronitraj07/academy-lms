@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageCircle, ThumbsUp, ThumbsDown, AlertCircle, User, BookOpen } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -14,16 +15,8 @@ interface Remark {
   is_parent_visible: boolean;
   created_at: string;
   updated_at: string;
-  subjects?: {
-    id: string;
-    name: string;
-    code: string;
-  } | null;
-  faculty: {
-    id: string;
-    full_name: string;
-    email: string;
-  };
+  subjects?: { id: string; name: string; code: string } | null;
+  faculty: { id: string; full_name: string; email: string };
 }
 
 interface RecentRemarksProps {
@@ -41,9 +34,7 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-            </div>
+            <div key={i} className="animate-pulse h-20 bg-muted rounded-lg" />
           ))}
         </div>
       </Card>
@@ -57,7 +48,7 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
           <MessageCircle className="w-5 h-5 text-purple-500" />
           <h2 className="text-xl font-semibold">Recent Remarks</h2>
         </div>
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-8 text-muted-foreground">
           <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>No remarks yet</p>
           <p className="text-sm mt-1">Teacher remarks will appear here</p>
@@ -68,9 +59,9 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
 
   const getRemarkIcon = (type: string) => {
     switch (type) {
-      case 'positive': return <ThumbsUp className="w-4 h-4 text-green-500" />;
+      case 'positive': return <ThumbsUp  className="w-4 h-4 text-green-500" />;
       case 'negative': return <ThumbsDown className="w-4 h-4 text-red-500" />;
-      default: return <AlertCircle className="w-4 h-4 text-blue-500" />;
+      default:         return <AlertCircle className="w-4 h-4 text-blue-500" />;
     }
   };
 
@@ -78,7 +69,7 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
     switch (type) {
       case 'positive': return 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800';
       case 'negative': return 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
-      default: return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800';
+      default:         return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800';
     }
   };
 
@@ -86,7 +77,7 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
     switch (type) {
       case 'positive': return 'Positive';
       case 'negative': return 'Needs Attention';
-      default: return 'General';
+      default:         return 'General';
     }
   };
 
@@ -97,7 +88,7 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
           <MessageCircle className="w-5 h-5 text-purple-500" />
           <h2 className="text-xl font-semibold">Recent Remarks</h2>
         </div>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <span className="text-sm text-muted-foreground">
           {remarks.length} {remarks.length === 1 ? 'remark' : 'remarks'}
         </span>
       </div>
@@ -111,31 +102,26 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-2">
                 {getRemarkIcon(remark.type)}
-                <span className="text-sm font-medium">
-                  {getTypeLabel(remark.type)}
-                </span>
+                <span className="text-sm font-medium">{getTypeLabel(remark.type)}</span>
                 {remark.is_parent_visible && (
-                  <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                     Parent Visible
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(remark.created_at), { addSuffix: true })}
               </span>
             </div>
 
-            <p className="text-sm mb-3 text-gray-700 dark:text-gray-300 leading-relaxed">
-              {remark.content}
-            </p>
+            <p className="text-sm mb-3 text-foreground leading-relaxed">{remark.content}</p>
 
-            <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-1">
                   <User className="w-3 h-3" />
                   <span>{remark.faculty.full_name}</span>
                 </div>
-                
                 {remark.subjects && (
                   <div className="flex items-center space-x-1">
                     <BookOpen className="w-3 h-3" />
@@ -146,12 +132,15 @@ export function RecentRemarks({ remarks, loading }: RecentRemarksProps) {
             </div>
           </div>
         ))}
-        
+
         {remarks.length > 5 && (
           <div className="text-center pt-4">
-            <button className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium">
+            <Link
+              href="/student/remarks"
+              className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
+            >
               View all {remarks.length} remarks →
-            </button>
+            </Link>
           </div>
         )}
       </div>

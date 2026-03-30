@@ -11,16 +11,8 @@ interface TimetableEntry {
   start_time: string;
   end_time: string;
   room: string;
-  subjects: {
-    id: string;
-    name: string;
-    code: string;
-  };
-  faculty: {
-    id: string;
-    full_name: string;
-    email: string;
-  };
+  subjects: { id: string; name: string; code: string };
+  faculty: { id: string; full_name: string; email: string };
 }
 
 interface TodayClassesProps {
@@ -39,13 +31,11 @@ export function TodayClasses({ classes, currentClass, nextClass, loading }: Toda
       <Card className="p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Calendar className="w-5 h-5 text-blue-500" />
-          <h2 className="text-xl font-semibold">Today's Classes</h2>
+          <h2 className="text-xl font-semibold">Today&apos;s Classes</h2>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-            </div>
+            <div key={i} className="animate-pulse h-20 bg-muted rounded-lg" />
           ))}
         </div>
       </Card>
@@ -57,9 +47,9 @@ export function TodayClasses({ classes, currentClass, nextClass, loading }: Toda
       <Card className="p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Calendar className="w-5 h-5 text-blue-500" />
-          <h2 className="text-xl font-semibold">Today's Classes</h2>
+          <h2 className="text-xl font-semibold">Today&apos;s Classes</h2>
         </div>
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-8 text-muted-foreground">
           <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>No classes scheduled for today</p>
           <p className="text-sm mt-1">Enjoy your free day!</p>
@@ -71,25 +61,24 @@ export function TodayClasses({ classes, currentClass, nextClass, loading }: Toda
   const getClassStatus = (entry: TimetableEntry) => {
     if (entry.end_time < currentTime) return 'completed';
     if (entry.start_time <= currentTime && entry.end_time >= currentTime) return 'current';
-    if (entry.start_time > currentTime) return 'upcoming';
     return 'upcoming';
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400';
-      case 'current': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800';
-      case 'upcoming': return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
-      default: return 'bg-gray-100 dark:bg-gray-800';
+      case 'completed': return 'bg-muted text-muted-foreground';
+      case 'current':   return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800';
+      case 'upcoming':  return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+      default:          return 'bg-muted';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed': return 'Completed';
-      case 'current': return 'Live Now';
-      case 'upcoming': return 'Upcoming';
-      default: return '';
+      case 'current':   return 'Live Now';
+      case 'upcoming':  return 'Upcoming';
+      default:          return '';
     }
   };
 
@@ -98,9 +87,9 @@ export function TodayClasses({ classes, currentClass, nextClass, loading }: Toda
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <Calendar className="w-5 h-5 text-blue-500" />
-          <h2 className="text-xl font-semibold">Today's Classes</h2>
+          <h2 className="text-xl font-semibold">Today&apos;s Classes</h2>
         </div>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <span className="text-sm text-muted-foreground">
           {classes.length} {classes.length === 1 ? 'class' : 'classes'}
         </span>
       </div>
@@ -157,11 +146,11 @@ export function TodayClasses({ classes, currentClass, nextClass, loading }: Toda
               {status === 'upcoming' && entry === nextClass && (
                 <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border-l-4 border-blue-500">
                   <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                    ⏰ Next class - starts in {(() => {
+                    ⏰ Next class — starts in {(() => {
                       const [hours, minutes] = entry.start_time.split(':').map(Number);
-                      const [currentHours, currentMinutes] = currentTime.split(':').map(Number);
-                      const diffMinutes = (hours * 60 + minutes) - (currentHours * 60 + currentMinutes);
-                      return diffMinutes > 60 ? `${Math.floor(diffMinutes / 60)}h ${diffMinutes % 60}m` : `${diffMinutes}m`;
+                      const [ch, cm] = currentTime.split(':').map(Number);
+                      const diff = (hours * 60 + minutes) - (ch * 60 + cm);
+                      return diff > 60 ? `${Math.floor(diff / 60)}h ${diff % 60}m` : `${diff}m`;
                     })()}
                   </p>
                 </div>
