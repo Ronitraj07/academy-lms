@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, isDemoMode } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+import { isDemoMode } from '@/lib/supabase';
 import { Profile } from '@/types';
 
 interface AuthContextType {
@@ -16,9 +17,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser]       = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Always use the SSR-aware browser client so session cookies are read correctly
+  const supabase = createClient();
 
   const refreshProfile = useCallback(async () => {
     if (isDemoMode) {
@@ -26,7 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const stored = localStorage.getItem('demo_user');
         if (stored) {
           const demoUser = JSON.parse(stored);
-          // #22 — use the stored id, not a hardcoded fallback string
           const resolvedId = demoUser.id || 'demo-user-id';
           setProfile({
             id: resolvedId,
@@ -37,39 +40,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       } catch {
-        // fall through to default below
+        // fall through
       }
-      // Fallback only when nothing is stored at all
-      setProfile({
-        id: 'demo-user-id',
-        user_id: 'demo-user-id',
-        full_name: 'Demo User',
-        role: 'student',
-      });
+      setProfile({ id: 'demo-user-id', user_id: 'demo-user-id', full_name: 'Demo User', role: 'student' });
       return;
     }
 
-    if (!user) {
-      setProfile(null);
-      return;
-    }
+    if (!user) { setProfile(null); return; }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      setProfile(data);
+      if (error) { console.error('Error fetching profile:', error); return; }
+      setProfile(data ?? null);
     } catch (error) {
       console.error('Error refreshing profile:', error);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
@@ -78,67 +69,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const stored = localStorage.getItem('demo_user');
         if (stored) {
           const demoUser = JSON.parse(stored);
-          setUser({
-            id: demoUser.id || 'demo-user-id',
-            email: demoUser.email || 'demo@academy.test',
-          } as User);
+          setUser({ id: demoUser.id || 'demo-user-id', email: demoUser.email || 'demo@academy.test' } as User);
         } else {
           setUser(null);
         }
-      } catch {
-        setUser(null);
-      }
+      } catch { setUser(null); }
       setLoading(false);
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: { user: User } | null } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event: string, session: { user: User } | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (user) {
-      refreshProfile();
-    } else if (!isDemoMode) {
-      setProfile(null);
-    }
+    if (user) refreshProfile();
+    else if (!isDemoMode) setProfile(null);
   }, [user, refreshProfile]);
 
   const signOut = async () => {
     if (isDemoMode) {
       localStorage.removeItem('demo_user');
       sessionStorage.removeItem('demo_user');
-      setUser(null);
-      setProfile(null);
+      setUser(null); setProfile(null);
       return;
     }
-
     await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
+    setUser(null); setProfile(null);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        loading,
-        signOut,
-        refreshProfile,
-      }}
-    >
+    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -146,8 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
