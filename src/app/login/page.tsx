@@ -13,6 +13,11 @@ import {
 type UIRole     = 'student' | 'staff';
 type ActualRole = 'student' | 'faculty' | 'admin';
 
+interface AllowedUserRow {
+  role: string;
+  is_active: boolean;
+}
+
 const DEMO_CREDS = [
   { role: 'Student' as const, tag: 'student' as UIRole, email: 'student@academy.test', password: 'student123!', dot: '#34d399' },
   { role: 'Faculty' as const, tag: 'staff'   as UIRole, email: 'faculty@academy.test', password: 'faculty123!', dot: '#60a5fa' },
@@ -146,7 +151,6 @@ function LoginPageInner() {
         return;
       }
 
-      // Use SSR browser client so PKCE verifier is stored in cookies
       const supabase = createClient();
       const { data, error: authErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (authErr) { setError(authErr.message); return; }
@@ -154,10 +158,15 @@ function LoginPageInner() {
       if (data.user) {
         const userEmail = (data.user.email || '').toLowerCase().trim();
 
-        const { data: allowed, error: wlErr } = await supabase
-          .from('allowed_users').select('role, is_active').eq('email', userEmail).maybeSingle();
+        const { data: allowedRaw, error: wlErr } = await supabase
+          .from('allowed_users')
+          .select('role, is_active')
+          .eq('email', userEmail)
+          .maybeSingle();
 
         if (wlErr) console.error('Whitelist lookup:', wlErr.message);
+
+        const allowed = allowedRaw as AllowedUserRow | null;
 
         if (!allowed || !allowed.is_active) {
           await supabase.auth.signOut();
@@ -184,8 +193,6 @@ function LoginPageInner() {
     if (isDemoMode) { setError('Google sign-in is not available in demo mode.'); return; }
     setLoading(true);
     try {
-      // CRITICAL: must use createBrowserClient (SSR) so PKCE code_verifier is
-      // stored in a cookie and survives the Google redirect back to /auth/callback
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -208,7 +215,6 @@ function LoginPageInner() {
         fontFamily:"system-ui,-apple-system,'Segoe UI',sans-serif",
       }}>
 
-        {/* glow */}
         <div aria-hidden style={{
           pointerEvents:'none', position:'fixed', inset:0,
           display:'flex', alignItems:'center', justifyContent:'center',
@@ -220,7 +226,6 @@ function LoginPageInner() {
           }} />
         </div>
 
-        {/* card */}
         <div className="lp-fadein" style={{
           position:'relative', width:'100%', maxWidth:460, borderRadius:20,
           overflow:'hidden',
@@ -232,7 +237,6 @@ function LoginPageInner() {
         }}>
           <div style={{ padding:'36px 32px 32px' }}>
 
-            {/* header */}
             <div style={{ textAlign:'center', marginBottom:28 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginBottom:10 }}>
                 <BookOpen style={{ width:22, height:22, color:'#fff' }} />
@@ -243,10 +247,8 @@ function LoginPageInner() {
               <p style={{ margin:0, color:'rgba(255,255,255,.38)', fontSize:13 }}>Access your dashboard</p>
             </div>
 
-            {/* divider */}
             <div style={{ height:1, background:'rgba(255,255,255,.07)', marginBottom:24 }} />
 
-            {/* role tabs */}
             <div style={{
               display:'flex', padding:4, borderRadius:12, marginBottom:24,
               background:'rgba(255,255,255,.05)',
@@ -270,7 +272,6 @@ function LoginPageInner() {
               ))}
             </div>
 
-            {/* error banner */}
             {error && (
               <div style={{
                 marginBottom:20, display:'flex', alignItems:'flex-start', gap:10,
@@ -286,7 +287,6 @@ function LoginPageInner() {
               </div>
             )}
 
-            {/* form */}
             <form onSubmit={handleLogin} noValidate style={{ display:'flex', flexDirection:'column', gap:16 }}>
               <Field
                 id={`${uid}-em`} label="Email" type="email"
@@ -358,14 +358,12 @@ function LoginPageInner() {
               </button>
             </form>
 
-            {/* divider */}
             <div style={{ display:'flex', alignItems:'center', gap:12, margin:'20px 0' }}>
               <div style={{ flex:1, height:1, background:'rgba(255,255,255,.07)' }} />
               <span style={{ fontSize:12, color:'rgba(255,255,255,.28)' }}>or</span>
               <div style={{ flex:1, height:1, background:'rgba(255,255,255,.07)' }} />
             </div>
 
-            {/* google */}
             <button type="button" onClick={handleGoogle} disabled={loading}
               style={{
                 width:'100%', height:48,
@@ -389,7 +387,6 @@ function LoginPageInner() {
               Sign in with Google
             </button>
 
-            {/* demo creds */}
             <div style={{ marginTop:20, borderRadius:12, border:'1px solid rgba(255,255,255,.07)', overflow:'hidden' }}>
               <button type="button" onClick={() => setShowDemo(v => !v)}
                 style={{
