@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useTimetable } from '@/hooks/useTimetable';
 import { useRemarks } from '@/hooks/useRemarks';
@@ -8,9 +9,9 @@ import { QuickStats } from '@/components/student/QuickStats';
 import { TodayClasses } from '@/components/student/TodayClasses';
 import { AttendanceOverview } from '@/components/student/AttendanceOverview';
 import { RecentRemarks } from '@/components/student/RecentRemarks';
+import { Calendar, ClipboardCheck, BookOpen, MessageSquare } from 'lucide-react';
 
 export default function StudentDashboard() {
-  // Fetch all student data
   const { stats: attendanceStats, loading: attendanceLoading } = useAttendance();
   const { todaySchedule, getCurrentClass, getNextClass, loading: timetableLoading } = useTimetable();
   const { remarks, loading: remarksLoading } = useRemarks();
@@ -19,10 +20,40 @@ export default function StudentDashboard() {
   const currentClass = getCurrentClass();
   const nextClass = getNextClass();
 
-  // Calculate enrollment count (assuming it's the number of subjects in stats)
   const enrolledSubjects = attendanceStats?.subjectWise 
     ? Object.keys(attendanceStats.subjectWise).length 
     : 0;
+
+  const quickActions = [
+    {
+      label: 'View Timetable',
+      description: 'Full schedule',
+      href: '/timetable',
+      icon: Calendar,
+      ariaLabel: 'View full timetable'
+    },
+    {
+      label: 'Check Attendance',
+      description: 'Detailed view',
+      href: '/attendance',
+      icon: ClipboardCheck,
+      ariaLabel: 'Check detailed attendance'
+    },
+    {
+      label: 'View Subjects',
+      description: 'Course details',
+      href: '/subjects',
+      icon: BookOpen,
+      ariaLabel: 'View all enrolled subjects'
+    },
+    {
+      label: 'All Remarks',
+      description: 'Feedback history',
+      href: '/remarks',
+      icon: MessageSquare,
+      ariaLabel: 'View all remarks and feedback'
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -73,53 +104,24 @@ export default function StudentDashboard() {
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-3">
-              <button
-                aria-label="View full timetable"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  View Timetable
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Full schedule
-                </div>
-              </button>
-
-              <button
-                aria-label="Check detailed attendance"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Check Attendance
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Detailed view
-                </div>
-              </button>
-
-              <button
-                aria-label="View all enrolled subjects"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  View Subjects
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Course details
-                </div>
-              </button>
-
-              <button
-                aria-label="View all remarks and feedback"
-                className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  All Remarks
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Feedback history
-                </div>
-              </button>
+              {quickActions.map(({ label, description, href, icon: Icon, ariaLabel }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-label={ariaLabel}
+                  className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-primary/40 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {label}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {description}
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </div>

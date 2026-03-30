@@ -12,7 +12,8 @@ import {
   User,
   Settings,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  X
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/hooks/useAuth'
@@ -44,6 +45,11 @@ interface Notification {
   type: 'info' | 'warning' | 'success' | 'error'
 }
 
+interface TopNavbarProps {
+  onMenuClick?: () => void
+  isSidebarOpen?: boolean
+}
+
 const mockNotifications: Notification[] = [
   {
     id: '1',
@@ -71,13 +77,13 @@ const mockNotifications: Notification[] = [
   }
 ]
 
-export function TopNavbar() {
-  const { user, profile } = useAuth()
+export function TopNavbar({ onMenuClick, isSidebarOpen }: TopNavbarProps) {
+  const { user, profile, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [notifications] = useState<Notification[]>(mockNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
 
   useEffect(() => {
     setMounted(true)
@@ -85,39 +91,42 @@ export function TopNavbar() {
 
   const unreadCount = notifications.filter(n => !n.read).length
 
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const markRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  }
+
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
-      case 'success':
-        return '✅'
-      case 'warning':
-        return '⚠️'
-      case 'error':
-        return '❌'
-      default:
-        return 'ℹ️'
+      case 'success': return '✅'
+      case 'warning': return '⚠️'
+      case 'error': return '❌'
+      default: return 'ℹ️'
     }
   }
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'from-red-500 to-pink-500'
-      case 'faculty':
-        return 'from-blue-500 to-indigo-500'
-      case 'student':
-        return 'from-green-500 to-emerald-500'
-      default:
-        return 'from-gray-500 to-gray-600'
+      case 'admin': return 'from-red-500 to-pink-500'
+      case 'faculty': return 'from-blue-500 to-indigo-500'
+      case 'student': return 'from-green-500 to-emerald-500'
+      default: return 'from-gray-500 to-gray-600'
     }
   }
 
-  const handleSignOut = () => {
-    // Clear any stored auth data
-    localStorage.removeItem('demo-user')
-    sessionStorage.removeItem('demo-user')
-    
-    // Redirect to login
+  const handleSignOut = async () => {
+    await signOut()
     router.push('/login')
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
   }
 
   if (!mounted) {
@@ -127,19 +136,27 @@ export function TopNavbar() {
   return (
     <header className="navbar-glass border-b border-border/50 px-4 md:px-6 py-3">
       <div className="flex items-center justify-between w-full">
-        {/* Left Section - Search */}
+        {/* Left Section */}
         <div className="flex items-center gap-4 flex-1">
           {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden h-9 w-9"
+            onClick={onMenuClick}
+            aria-label={isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isSidebarOpen}
+            aria-controls="sidebar-nav"
           >
-            <Menu className="h-4 w-4" />
+            {isSidebarOpen ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <Menu className="h-4 w-4" />
+            )}
           </Button>
 
           {/* Search */}
-          <div className="relative flex-1 max-w-md hidden sm:block">
+          <form onSubmit={handleSearch} role="search" className="relative flex-1 max-w-md hidden sm:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -147,17 +164,19 @@ export function TopNavbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 input-modern"
+              aria-label="Search"
             />
-          </div>
+          </form>
         </div>
 
-        {/* Right Section - Actions */}
+        {/* Right Section */}
         <div className="flex items-center gap-3">
           {/* Search Button - Mobile */}
           <Button
             variant="ghost"
             size="icon"
             className="sm:hidden h-9 w-9"
+            aria-label="Search"
           >
             <Search className="h-4 w-4" />
           </Button>
@@ -168,6 +187,7 @@ export function TopNavbar() {
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="h-9 w-9 hover:bg-muted"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
               <Sun className="h-4 w-4" />
@@ -179,12 +199,18 @@ export function TopNavbar() {
           {/* Notifications */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 relative hover:bg-muted">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 relative hover:bg-muted"
+                aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+              >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                    aria-hidden="true"
                   >
                     {unreadCount}
                   </Badge>
@@ -194,11 +220,18 @@ export function TopNavbar() {
             <PopoverContent className="w-80 p-0" align="end">
               <div className="flex items-center justify-between p-4 border-b">
                 <h4 className="font-medium">Notifications</h4>
-                <Badge variant="secondary" className="h-6 px-2 text-xs">
-                  {unreadCount} new
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={markAllRead}>
+                      Mark all read
+                    </Button>
+                  )}
+                  <Badge variant="secondary" className="h-6 px-2 text-xs">
+                    {unreadCount} new
+                  </Badge>
+                </div>
               </div>
-              <div className="max-h-80 overflow-auto scrollbar-modern">
+              <div className="max-h-80 overflow-auto scrollbar-modern" role="list" aria-label="Notifications">
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center text-muted-foreground">
                     <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -207,15 +240,17 @@ export function TopNavbar() {
                 ) : (
                   <div className="divide-y">
                     {notifications.map((notification) => (
-                      <div
+                      <button
                         key={notification.id}
+                        role="listitem"
+                        onClick={() => markRead(notification.id)}
                         className={cn(
-                          'p-4 hover:bg-muted/50 cursor-pointer transition-colors',
+                          'w-full text-left p-4 hover:bg-muted/50 cursor-pointer transition-colors',
                           !notification.read && 'bg-primary/5'
                         )}
                       >
                         <div className="flex gap-3">
-                          <span className="text-sm mt-0.5">
+                          <span className="text-sm mt-0.5" aria-hidden="true">
                             {getNotificationIcon(notification.type)}
                           </span>
                           <div className="flex-1 min-w-0">
@@ -228,18 +263,18 @@ export function TopNavbar() {
                             </p>
                           </div>
                           {!notification.read && (
-                            <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                            <div className="w-2 h-2 bg-primary rounded-full mt-2" aria-label="Unread"></div>
                           )}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
               </div>
               {notifications.length > 0 && (
                 <div className="p-3 border-t bg-muted/30">
-                  <Button variant="ghost" size="sm" className="w-full text-xs">
-                    View All Notifications
+                  <Button variant="ghost" size="sm" className="w-full text-xs" asChild>
+                    <Link href="/notifications">View All Notifications</Link>
                   </Button>
                 </div>
               )}
@@ -252,7 +287,7 @@ export function TopNavbar() {
               <Button variant="ghost" className="h-9 px-2 hover:bg-muted group">
                 <div className="flex items-center gap-2">
                   <Avatar className="h-7 w-7">
-                    <AvatarImage src="" alt={user?.email} />
+                    <AvatarImage src="" alt={user?.email ?? 'User avatar'} />
                     <AvatarFallback className={cn(
                       'text-white text-xs font-semibold bg-gradient-to-r',
                       getRoleBadgeColor(profile?.role || 'student')

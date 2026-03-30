@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { Profile } from '@/types';
@@ -20,9 +20,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (isDemoMode) {
-      // Mock profile for demo mode
+      // Read the actual logged-in demo user from localStorage
+      try {
+        const stored = localStorage.getItem('demo_user');
+        if (stored) {
+          const demoUser = JSON.parse(stored);
+          setProfile({
+            id: demoUser.id || 'demo-profile-id',
+            user_id: demoUser.id || 'demo-user-id',
+            full_name: demoUser.email?.split('@')[0] || 'Demo User',
+            role: demoUser.role || 'student',
+          });
+          return;
+        }
+      } catch {
+        // fallback
+      }
+      // Fallback if nothing stored
       setProfile({
         id: 'demo-profile-id',
         user_id: 'demo-user-id',
@@ -53,21 +69,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error refreshing profile:', error);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (isDemoMode) {
-      // In demo mode, simulate a logged-in user
-      setUser({
-        id: 'demo-user-id',
-        email: 'demo@academy.test',
-      } as User);
+      // Read stored demo user to restore session
+      try {
+        const stored = localStorage.getItem('demo_user');
+        if (stored) {
+          const demoUser = JSON.parse(stored);
+          setUser({
+            id: demoUser.id || 'demo-user-id',
+            email: demoUser.email || 'demo@academy.test',
+          } as User);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      }
       setLoading(false);
       return;
     }
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }: any) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: { user: User } | null } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -75,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+    } = supabase.auth.onAuthStateChange(async (_event: string, session: { user: User } | null) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -89,10 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setProfile(null);
     }
-  }, [user]);
+  }, [user, refreshProfile]);
 
   const signOut = async () => {
     if (isDemoMode) {
+      localStorage.removeItem('demo_user');
+      sessionStorage.removeItem('demo_user');
       setUser(null);
       setProfile(null);
       return;
