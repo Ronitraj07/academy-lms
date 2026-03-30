@@ -3,15 +3,14 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface AttendanceChartProps {
-  data: { date: string; percentage: number }[]
+  data?: { date: string; percentage: number }[]
 }
 
-export function AttendanceChart({ data }: AttendanceChartProps) {
-  // Format the data for the chart
+export function AttendanceChart({ data = [] }: AttendanceChartProps) {
   const chartData = data.map(item => ({
     date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     percentage: Math.round(item.percentage),
-    fullDate: item.date
+    fullDate: item.date,
   }))
 
   return (
@@ -19,19 +18,14 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-          <XAxis 
-            dataKey="date" 
+          <XAxis
+            dataKey="date"
             className="text-sm fill-muted-foreground"
           />
-          <YAxis 
+          <YAxis
             domain={[0, 100]}
             className="text-sm fill-muted-foreground"
             label={{ value: 'Attendance %', angle: -90, position: 'insideLeft' }}
@@ -41,15 +35,15 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
               borderRadius: '8px',
-              color: 'hsl(var(--card-foreground))'
+              color: 'hsl(var(--card-foreground))',
             }}
             labelFormatter={(value, payload) => {
               const item = payload?.[0]?.payload
               return item?.fullDate ? new Date(item.fullDate).toLocaleDateString() : value
             }}
             formatter={(value) => {
-              if (value === undefined || value === null) return ['0%', 'Attendance'];
-              return [`${value}%`, 'Attendance'];
+              if (value === undefined || value === null) return ['0%', 'Attendance']
+              return [`${value}%`, 'Attendance']
             }}
           />
           <Legend />
