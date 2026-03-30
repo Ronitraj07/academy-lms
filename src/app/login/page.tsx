@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useId, useEffect } from 'react';
+import { useState, useId, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import {
@@ -19,7 +19,10 @@ const DEMO_CREDS = [
   { role: 'Admin',   tag: 'staff',   email: 'admin@academy.test',   password: 'admin123!',   color: 'bg-rose-400'    },
 ] as const;
 
-export default function LoginPage() {
+/* ─────────────────────────────────────────────────────────────────────────
+   Inner component — uses useSearchParams(), must be inside <Suspense>
+───────────────────────────────────────────────────────────────────────── */
+function LoginPageInner() {
   const uid          = useId();
   const router       = useRouter();
   const searchParams = useSearchParams();
@@ -34,16 +37,11 @@ export default function LoginPage() {
   const [showDemo, setShowDemo] = useState(false);
   const [fillAnim, setFillAnim] = useState<string | null>(null);
 
-  // Handle error codes from OAuth callback redirect
   useEffect(() => {
     const e = searchParams.get('error');
-    if (e === 'not_allowed') {
-      setError('Access denied. Your account has not been approved by an administrator.');
-    } else if (e === 'oauth_failed') {
-      setError('Google sign-in failed. Please try again.');
-    } else if (e === 'missing_code') {
-      setError('OAuth flow interrupted. Please try again.');
-    }
+    if (e === 'not_allowed')  setError('Access denied. Your account has not been approved by an administrator.');
+    else if (e === 'oauth_failed') setError('Google sign-in failed. Please try again.');
+    else if (e === 'missing_code') setError('OAuth flow interrupted. Please try again.');
   }, [searchParams]);
 
   const validateEmail = (v: string) => {
@@ -71,7 +69,6 @@ export default function LoginPage() {
     setLoading(true); setError('');
 
     try {
-      /* ── DEMO MODE ── */
       if (isDemoMode) {
         const match = DEMO_CREDS.find(
           c => c.email.toLowerCase() === email.trim().toLowerCase() && c.password === password
@@ -92,7 +89,6 @@ export default function LoginPage() {
         return;
       }
 
-      /* ── REAL SUPABASE ── */
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
         email: email.trim(), password,
       });
@@ -100,8 +96,6 @@ export default function LoginPage() {
 
       if (data.user) {
         const userEmail = (data.user.email || '').toLowerCase().trim();
-
-        // Whitelist check
         const { data: allowed } = await supabase
           .from('allowed_users')
           .select('role, is_active')
@@ -109,18 +103,15 @@ export default function LoginPage() {
           .maybeSingle();
 
         if (!allowed || !allowed.is_active) {
-          // Not whitelisted — sign out immediately
           await supabase.auth.signOut();
           setError('Access denied. Your account has not been approved by an administrator.');
           return;
         }
 
-        // Upsert profile with role from whitelist
         await supabase.from('profiles').upsert(
           { user_id: data.user.id, email: userEmail, role: allowed.role },
           { onConflict: 'user_id' }
         );
-
         redirect(allowed.role || 'student');
       }
     } catch { setError('An unexpected error occurred. Please try again.'); }
@@ -141,6 +132,7 @@ export default function LoginPage() {
   };
 
   const roleLabel = role === 'student' ? 'Student' : 'Staff';
+  const isAccessDenied = error.includes('Access denied');
 
   return (
     <div
@@ -205,17 +197,13 @@ export default function LoginPage() {
               role="alert" aria-live="assertive"
               className="mb-5 flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-sm animate-scale-in"
               style={{
-                background: error.includes('Access denied')
-                  ? 'rgba(251,191,36,0.10)'
-                  : 'rgba(239,68,68,0.12)',
-                border: error.includes('Access denied')
-                  ? '1px solid rgba(251,191,36,0.25)'
-                  : '1px solid rgba(239,68,68,0.25)',
-                color: error.includes('Access denied') ? '#fde68a' : '#fca5a5',
+                background: isAccessDenied ? 'rgba(251,191,36,0.10)' : 'rgba(239,68,68,0.12)',
+                border:     isAccessDenied ? '1px solid rgba(251,191,36,0.25)' : '1px solid rgba(239,68,68,0.25)',
+                color:      isAccessDenied ? '#fde68a' : '#fca5a5',
               }}
             >
-              {error.includes('Access denied')
-                ? <ShieldOff className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+              {isAccessDenied
+                ? <ShieldOff   className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
                 : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
               }
               <span>{error}</span>
@@ -357,7 +345,7 @@ export default function LoginPage() {
             </button>
             {showDemo && (
               <div
-                className="px-3 pb-3 pt-2 space-y-1.5 animate-fade-up"
+                className="px-3 pb-3 pt-2 space-y-1.5"
                 style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
               >
                 <p className="text-[11px] text-white/30 px-1 mb-2">Click to auto-fill:</p>
@@ -397,5 +385,24 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Default export — wraps inner component in Suspense so Next.js can
+   statically prerender the shell while useSearchParams() stays client-only
+───────────────────────────────────────────────────────────────────────── */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 40%, #0d2a4a 0%, #07111f 55%, #040d18 100%)' }}
+      >
+        <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+      </div>
+    }>
+      <LoginPageInner />
+    </Suspense>
   );
 }
